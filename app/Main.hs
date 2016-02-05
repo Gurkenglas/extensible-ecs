@@ -2,18 +2,26 @@ module Main where
 import Control.Monad.State
 import Lib
 
-import SystemFoo
-import SystemBar
-import SystemBaz
+import System.Color
+import System.Physics
+import System.Sound
 
 main :: IO ()
 main = do
     void . flip runStateT newWorld $ do
-        initSystemFoo
-        initSystemBar
-        initSystemBaz
+        initSystemColor
+        initSystemPhysics
+        initSystemSound
 
+
+        createEntity
+        createEntity
+        createEntity
         replicateM_ 10 $ do
-            tickSystemFoo
-            tickSystemBar
-            tickSystemBaz
+            tickSystemColor
+            tickSystemPhysics
+            tickSystemSound
+        saveEntities
+
+
+
