@@ -1,29 +1,20 @@
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE TemplateHaskell #-}
 module System.Sound where
 import Data.Vault.Strict
 import Control.Monad.State
-import System.IO.Unsafe
 import Control.Lens
 import Lib
 import Prelude hiding (lookup)
 
-{-# NOINLINE soundSystemKey #-}
-soundSystemKey :: Key SoundSystem
-soundSystemKey = unsafePerformIO newKey
-
-{-# NOINLINE soundComponentKey #-}
-soundComponentKey :: Key (EntityMap SoundComponent)
-soundComponentKey = unsafePerformIO newKey
-
-
-
 data SoundSystem = SoundSystem Int deriving Show
+defineSystemKey ''SoundSystem
 
 data SoundComponent = SoundComponent 
     { scChannel  :: Int
     , scSourceID :: Int 
     } deriving Show
-
+defineComponentKey ''SoundComponent
 
 
 initSystemSound :: MonadState World m => m ()

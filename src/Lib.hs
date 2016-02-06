@@ -12,6 +12,38 @@ import qualified Data.Map as Map
 import GHC.Word
 import System.Random
 import Data.Yaml hiding ((.=))
+import Language.Haskell.TH
+import System.IO.Unsafe
+import Data.Char
+{-
+Generates definitions of the form:
+{-# NOINLINE soundSystemKey #-}
+soundSystemKey :: Key SoundSystem
+soundSystemKey = unsafePerformIO newKey
+-}
+defineKey :: String -> TypeQ -> DecsQ
+defineKey keyString keyType = sequence [inlineDecl, signatureDecl, keyDecl]
+    where
+        keyName       = mkName keyString
+        inlineDecl    = pragInlD keyName NoInline FunLike AllPhases
+        signatureDecl = sigD keyName (conT ''Key `appT` keyType)
+        keyDecl       = valD (varP keyName) (normalB (appE (varE 'unsafePerformIO) (varE 'Vault.newKey))) []
+
+defineSystemKey :: Name -> DecsQ
+defineSystemKey name = do
+    let systemKeyName = toKeyName (nameBase name)
+    defineKey systemKeyName (conT name)
+
+
+defineComponentKey :: Name -> DecsQ
+defineComponentKey name = do
+    let componentKeyName = toKeyName (nameBase name)
+    defineKey componentKeyName (conT ''EntityMap `appT` conT name)
+
+
+toKeyName :: String -> String
+toKeyName (x:xs) = toLower x:xs ++ "Key"
+toKeyName [] = error "toKeyName: empty Key type name"
 
 type EntityID = Word32
 
@@ -22,7 +54,7 @@ type ComponentName = String
 type WorldMonad a = StateT World IO a
 
 data ComponentInterface = ComponentInterface
-    { ciAddComponent :: (EntityID -> WorldMonad ())
+    { ciAddComponent     :: (EntityID -> WorldMonad ())
     , ciExtractComponent :: (EntityID -> WorldMonad (Maybe Value))
     }
 

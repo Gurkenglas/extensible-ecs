@@ -1,32 +1,28 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE TemplateHaskell #-}
 module System.Color where
 import Data.Vault.Strict
 import Control.Monad.State
-import System.IO.Unsafe
 import Control.Lens
 import Lib
 import Prelude hiding (lookup)
 import System.Random
--- import           Data.Map (Map)
 import qualified Data.Map as Map
 import Data.Yaml
 import GHC.Generics
 
-{-# NOINLINE colorSystemKey #-}
-colorSystemKey :: Key ColorSystem
-colorSystemKey = unsafePerformIO newKey
 
-{-# NOINLINE colorComponentKey #-}
-colorComponentKey :: Key (EntityMap ColorComponent)
-colorComponentKey = unsafePerformIO newKey
 
 type ColorOption = String
 
 data ColorSystem = ColorSystem { csColorOptions :: [ColorOption] } deriving Show
 
 data ColorComponent = ColorComponent ColorOption deriving (Show, Generic, ToJSON)
+
+defineSystemKey ''ColorSystem
+defineComponentKey ''ColorComponent
 
 newColorSystem :: ColorSystem
 newColorSystem = ColorSystem ["red", "blue", "green"]
@@ -55,6 +51,3 @@ tickSystemColor = do
         liftIO (print (entityID, color))
     return ()
 
-
-
- 
