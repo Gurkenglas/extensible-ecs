@@ -14,14 +14,20 @@ main = do
         initSystemSound
 
 
-        createEntity
-        createEntity
-        createEntity
+        entity1 <- createEntity
+        _ <- createEntity
+        _ <- createEntity
         replicateM_ 10 $ do
             tickSystemColor
             tickSystemPhysics
             tickSystemSound
+
+        liftIO (putStrLn "Entities:")
         saveEntities
 
+        liftIO (putStrLn "Entities after remove:")
+        removeEntity entity1
+        
+        saveEntities
 
 

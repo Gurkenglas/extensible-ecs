@@ -15,6 +15,7 @@ import Data.Yaml hiding ((.=))
 import Language.Haskell.TH
 import System.IO.Unsafe
 import Data.Char
+import Data.List
 {-
 Generates definitions of the form:
 {-# NOINLINE soundSystemKey #-}
@@ -56,6 +57,7 @@ type WorldMonad a = StateT World IO a
 data ComponentInterface = ComponentInterface
     { ciAddComponent     :: (EntityID -> WorldMonad ())
     , ciExtractComponent :: (EntityID -> WorldMonad (Maybe Value))
+    , ciRemoveComponent  :: (EntityID -> WorldMonad ())
     }
 
 data World = World
@@ -69,12 +71,20 @@ makeLenses ''World
 newEntity :: MonadIO m => m EntityID
 newEntity = liftIO randomIO
 
-createEntity :: StateT World IO ()
+createEntity :: WorldMonad EntityID
 createEntity = do
     entityID <- newEntity
     library <- use wldComponentLibrary
     forM_ library (\ComponentInterface{..} -> ciAddComponent entityID)
     wldEntities %= (entityID:)
+
+    return entityID
+
+removeEntity :: EntityID -> WorldMonad ()
+removeEntity entityID = do
+    library <- use wldComponentLibrary
+    forM_ library (\ComponentInterface{..} -> ciRemoveComponent entityID)
+    wldEntities %= (delete entityID)
 
 newWorld :: World
 newWorld = World mempty mempty mempty mempty
@@ -86,16 +96,29 @@ withSystem systemKey action = do
 
 
 
-addComponentToEntity :: (MonadIO m,MonadState World m) => Key (EntityMap a) -> EntityID -> a -> m ()
-addComponentToEntity componentKey entityID value = 
+addComponentToEntity :: (MonadIO m,MonadState World m) => Key (EntityMap a) -> a -> EntityID-> m ()
+addComponentToEntity componentKey value entityID = 
     withComponentMap_ componentKey $ \componentMap -> do
         componentMaps <- use wldComponents
         let newComponentMap = Map.insert entityID value componentMap
             newComponentMaps = Vault.insert componentKey newComponentMap componentMaps
         wldComponents .= newComponentMaps
 
-registerComponentType :: MonadState World m => String -> ComponentInterface -> m ()
-registerComponentType name addFunction = wldComponentLibrary . at name ?= addFunction
+removeComponentFromEntity :: (MonadIO m,MonadState World m) => Key (EntityMap a) -> EntityID -> m ()
+removeComponentFromEntity componentKey entityID = 
+    withComponentMap_ componentKey $ \componentMap -> do
+        componentMaps <- use wldComponents
+        let newComponentMap = Map.delete entityID componentMap
+            newComponentMaps = Vault.insert componentKey newComponentMap componentMaps
+        wldComponents .= newComponentMaps
+
+registerSystem :: MonadState World m => Key a -> a -> m ()
+registerSystem systemKey system = wldSystems %= Vault.insert systemKey system
+
+registerComponentType :: MonadState World m => String -> Key (EntityMap a) -> ComponentInterface -> m ()
+registerComponentType name componentKey addFunction = do
+    wldComponents %= Vault.insert componentKey mempty
+    wldComponentLibrary . at name ?= addFunction
 
 withComponentMap_ :: MonadState World m => Key (EntityMap a) -> ((EntityMap a) -> m b) -> m ()
 withComponentMap_ componentKey = void . withComponentMap componentKey
@@ -110,7 +133,6 @@ traverseComponentEntities componentKey action =
     withComponentMap_ componentKey $ \componentMap -> 
         forM_ (Map.toList componentMap) action
 
--- saveEntities :: (MonadState World m, MonadIO m) => m ()
 saveEntities :: WorldMonad ()
 saveEntities = do
     entities <- use wldEntities
@@ -123,3 +145,11 @@ saveEntities = do
                 Nothing -> entityMap
             ) mempty componentInterfaces
         liftIO $ print (entityID, yaml)
+
+getComponentJSON :: (MonadState World f, ToJSON a) => Key (EntityMap a) -> EntityID -> f (Maybe Value)
+getComponentJSON componentKey entityID = fmap toJSON <$> getComponent entityID componentKey
+
+getComponent :: MonadState World f => EntityID -> Key (EntityMap a) -> f (Maybe a)
+getComponent entityID componentKey = 
+    fmap join $ withComponentMap componentKey $ \componentMap ->
+        return $ Map.lookup entityID componentMap
