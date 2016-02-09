@@ -1,25 +1,51 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DeriveAnyClass #-}
 module System.Physics where
-import Data.Vault.Strict
 import Control.Monad.State
+import Rumpus
+import Data.Yaml
+import GHC.Generics
 import Control.Lens
-import Lib
-import Prelude hiding (lookup)
+import Physics.Bullet
+import Linear.Extra
 
-
-data PhysicsSystem = PhysicsSystem Int deriving Show
+data PhysicsSystem = PhysicsSystem { _psDynamicsWorld :: DynamicsWorld } deriving Show
+makeLenses ''PhysicsSystem
 defineSystemKey ''PhysicsSystem
 
-data PhysicsComponent = PhysicsComponent { _pcMass :: Float } deriving Show
-defineComponentKey ''PhysicsComponent
+newtype Mass = Mass { _cmpMass :: Float } deriving (Show, Generic, ToJSON, FromJSON)
+defineComponentKey ''Mass
 
-initSystemPhysics :: MonadState World m => m ()
+newtype Restitution = Restitution { _cmpRestitution :: Float } deriving (Show, Generic, ToJSON, FromJSON)
+defineComponentKey ''Restitution
+
+defineComponentKey ''RigidBody
+
+initSystemPhysics :: (MonadIO m, MonadState World m) => m ()
 initSystemPhysics = do
-    wldSystems %= insert physicsSystemKey (PhysicsSystem 0)
+    dynamicsWorld <- createDynamicsWorld mempty
+    registerSystem physicsSystemKey (PhysicsSystem dynamicsWorld)
+
+    registerComponent "RigidBody" rigidBodyKey $ ComponentInterface 
+        { ciAddComponent     = \entityID -> do
+                let bodyInfo = mempty
+                shape <- createBoxShape (1 :: V3 Float)
+                rigidBody <- addRigidBody dynamicsWorld (CollisionObjectID entityID) shape bodyInfo
+                addComponentToEntity rigidBodyKey rigidBody entityID
+        , ciExtractComponent = Nothing
+        , ciRemoveComponent  = \entityID -> 
+                withComponent entityID rigidBodyKey $ \rigidBody -> do
+                    removeRigidBody dynamicsWorld rigidBody
+                    removeComponentFromEntity rigidBodyKey entityID
+        }
+    registerComponentSimple "Mass"        massKey        (Mass 2)
+    registerComponentSimple "Restitution" restitutionKey (Restitution 20)
 
 tickSystemPhysics :: (MonadState World m, MonadIO m) => m ()
 tickSystemPhysics = do
-    
+    withSystem physicsSystemKey $ \(PhysicsSystem dynamicsWorld) -> stepSimulation dynamicsWorld 90
     return ()
+
 
