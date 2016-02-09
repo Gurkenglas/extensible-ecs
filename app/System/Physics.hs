@@ -23,7 +23,7 @@ defineComponentKey ''Restitution
 
 defineComponentKey ''RigidBody
 
-initSystemPhysics :: (MonadIO m, MonadState World m) => m ()
+initSystemPhysics :: (MonadIO m, HasECS s, MonadState s m) => m ()
 initSystemPhysics = do
     dynamicsWorld <- createDynamicsWorld mempty
     registerSystem physicsSystemKey (PhysicsSystem dynamicsWorld)
@@ -43,7 +43,7 @@ initSystemPhysics = do
     registerComponentSimple "Mass"        massKey        (Mass 2)
     registerComponentSimple "Restitution" restitutionKey (Restitution 20)
 
-tickSystemPhysics :: (MonadState World m, MonadIO m) => m ()
+tickSystemPhysics :: (HasECS s, MonadState s m, MonadIO m) => m ()
 tickSystemPhysics = do
     withSystem physicsSystemKey $ \(PhysicsSystem dynamicsWorld) -> stepSimulation dynamicsWorld 90
     return ()

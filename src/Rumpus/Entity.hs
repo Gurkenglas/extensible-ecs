@@ -1,6 +1,8 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 module Rumpus.Entity where
 import Control.Lens
 import Prelude hiding (lookup)
@@ -15,27 +17,27 @@ newEntity :: MonadIO m => m EntityID
 newEntity = liftIO randomIO
 
 
-createEntity :: WorldMonad EntityID
+createEntity :: (MonadIO m, HasECS s, MonadState s m) => m EntityID
 createEntity = do
     entityID <- newEntity
-    library <- use wldComponentLibrary
+    library <- use (ecs . wldComponentLibrary)
     forM_ library (\ComponentInterface{..} -> ciAddComponent entityID)
-    wldEntities %= (entityID:)
+    ecs . wldEntities %= (entityID:)
 
     return entityID
 
 
-removeEntity :: EntityID -> WorldMonad ()
+removeEntity :: (HasECS s, MonadState s m, MonadIO m) => EntityID -> m ()
 removeEntity entityID = do
-    library <- use wldComponentLibrary
+    library <- use (ecs . wldComponentLibrary)
     forM_ library (\ComponentInterface{..} -> ciRemoveComponent entityID)
-    wldEntities %= delete entityID
+    ecs . wldEntities %= delete entityID
 
 
-saveEntities :: WorldMonad ()
+saveEntities :: (MonadIO m, HasECS s, MonadState s m) => m ()
 saveEntities = do
-    entities <- use wldEntities
-    componentInterfaces <- Map.toList <$> use wldComponentLibrary
+    entities <- use (ecs . wldEntities)
+    componentInterfaces <- Map.toList <$> use (ecs . wldComponentLibrary)
     forM_ entities $ \entityID -> do
         yaml <- foldM (\entityMap (componentName, ComponentInterface{..}) -> do
             mValue <- join <$> forM ciExtractComponent ($ entityID)

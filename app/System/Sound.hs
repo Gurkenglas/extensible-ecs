@@ -14,11 +14,11 @@ data SoundSource = SoundSource
 defineComponentKey ''SoundSource
 
 
-initSystemSound :: MonadState World m => m ()
+initSystemSound :: (HasECS s, MonadState s m) => m ()
 initSystemSound = do
     registerSystem soundSystemKey (SoundSystem 0)
 
-tickSystemSound :: (MonadState World m, MonadIO m) => m ()
+tickSystemSound :: (HasECS s, MonadState s m, MonadIO m) => m ()
 tickSystemSound = modifySystem soundSystemKey $ \(SoundSystem i) -> do
     let newValue = (SoundSystem (i + 1))
     liftIO . print $ newValue

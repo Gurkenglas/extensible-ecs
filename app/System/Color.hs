@@ -17,7 +17,7 @@ defineSystemKey ''ColorSystem
 data Color = Color ColorOption deriving (Show, Generic, ToJSON)
 defineComponentKey ''Color
 
-initSystemColor :: MonadState World m => m ()
+initSystemColor :: (MonadIO m, HasECS s, MonadState s m) => m ()
 initSystemColor = do
     
     registerSystem colorSystemKey newColorSystem
@@ -34,7 +34,7 @@ initSystemColor = do
 newColorSystem :: ColorSystem
 newColorSystem = ColorSystem ["red", "blue", "green"]
 
-tickSystemColor :: (MonadState World m, MonadIO m) => m ()
+tickSystemColor :: (HasECS s, MonadState s m, MonadIO m) => m ()
 tickSystemColor = do
     traverseEntitiesWithComponent colorKey $ \(entityID, color) ->
         liftIO (print (entityID, color))

@@ -11,16 +11,16 @@ import Control.Monad.State
 
 import Rumpus.Types
 
-registerSystem :: MonadState World m => Key a -> a -> m ()
-registerSystem systemKey system = wldSystems %= Vault.insert systemKey system
+registerSystem :: (HasECS s, MonadState s m) => Key a -> a -> m ()
+registerSystem systemKey system = ecs . wldSystems %= Vault.insert systemKey system
 
-withSystem :: MonadState World m => Key a -> (a -> m b) -> m ()
+withSystem :: (HasECS s, MonadState s m) => Key a -> (a -> m b) -> m ()
 withSystem systemKey action = do
-    systems <- use wldSystems
+    systems <- use (ecs . wldSystems)
     forM_ (Vault.lookup systemKey systems) action
 
-modifySystem :: MonadState World m => Key a -> (a -> m a) -> m ()
+modifySystem :: (HasECS s, MonadState s m) => Key a -> (a -> m a) -> m ()
 modifySystem systemKey action = 
     withSystem systemKey $ \system -> do
         newSystem <- action system
-        wldSystems %= Vault.insert systemKey newSystem
+        ecs . wldSystems %= Vault.insert systemKey newSystem

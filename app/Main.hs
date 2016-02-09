@@ -8,7 +8,7 @@ import System.Sound
 
 main :: IO ()
 main = do
-    void . flip runStateT newWorld $ do
+    void . flip runStateT newECS $ do
         initSystemColor
         initSystemPhysics
         initSystemSound
