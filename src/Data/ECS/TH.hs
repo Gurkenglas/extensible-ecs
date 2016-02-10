@@ -1,11 +1,11 @@
 {-# LANGUAGE TemplateHaskell #-}
-module Rumpus.TH where
+module Data.ECS.TH where
 import Language.Haskell.TH
-import Data.Char
 import System.IO.Unsafe
 import           Data.Vault.Strict (Key)
 import qualified Data.Vault.Strict as Vault
-import Rumpus.Types
+import Data.ECS.Types
+import Data.List
 
 {- |
 Generates definitions of the form:
@@ -28,7 +28,7 @@ physicsSystemKey :: Key PhysicsSystem
 -}
 defineSystemKey :: Name -> DecsQ
 defineSystemKey name = do
-    let systemKeyName = toKeyName (nameBase name)
+    let systemKeyName = "sys" ++ deleteWord "System" (nameBase name)
     defineKey systemKeyName (conT name)
 
 
@@ -39,12 +39,15 @@ colorComponentKey :: Key (EntityMap ColorComponent)
 -}
 defineComponentKey :: Name -> DecsQ
 defineComponentKey name = do
-    let componentKeyName = toKeyName (nameBase name)
+    let componentKeyName = "cmp" ++ (nameBase name)
     defineKey componentKeyName (conT ''EntityMap `appT` conT name)
 
 {- | 
-toKeyName "PhysicsSystem" = "physicsSystemKey"
+>>> deleteWord "PhysicsSystem"  
+"Physics"
 -}
-toKeyName :: String -> String
-toKeyName (x:xs) = toLower x:xs ++ "Key"
-toKeyName ""     = ""
+deleteWord :: String -> String -> String
+deleteWord _    [] = []
+deleteWord word (x:xs)
+    | word `isPrefixOf` (x:xs) = drop (length word) (x:xs)
+    | otherwise                = (x:deleteWord word xs)

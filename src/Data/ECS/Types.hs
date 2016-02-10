@@ -3,7 +3,7 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE RankNTypes #-}
 
-module Rumpus.Types where
+module Data.ECS.Types where
 
 import Data.Vault.Strict (Vault)
 import Data.Map (Map)

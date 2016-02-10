@@ -1,6 +1,6 @@
 module Main where
 import Control.Monad.State
-import Rumpus
+import Data.ECS
 
 import System.Color
 import System.Physics

@@ -1,8 +1,8 @@
-name:                extensible-systems
+name:                extensible-ecs
 version:             0.1.0.0
 synopsis:            Initial project template from stack
 description:         Please see README.md
-homepage:            http://github.com/lukexi/extensible-systems#readme
+homepage:            http://github.com/lukexi/extensible-ecs#readme
 license:             BSD3
 license-file:        LICENSE
 author:              Luke Iannini
@@ -15,12 +15,12 @@ cabal-version:       >=1.10
 
 library
   hs-source-dirs:      src
-  exposed-modules:     Rumpus
-                       Rumpus.Component
-                       Rumpus.Entity
-                       Rumpus.System
-                       Rumpus.TH
-                       Rumpus.Types
+  exposed-modules:     Data.ECS
+                       Data.ECS.Component
+                       Data.ECS.Entity
+                       Data.ECS.System
+                       Data.ECS.TH
+                       Data.ECS.Types
   build-depends:       base >= 4.7 && < 5
                      , vault
                      , lens
@@ -32,7 +32,7 @@ library
   default-language:    Haskell2010
   ghc-options:         -Wall -O2 
 
-executable extensible-systems
+executable extensible-ecs
   hs-source-dirs:      app
   main-is:             Main.hs
   other-modules:       System.Color 
@@ -40,7 +40,7 @@ executable extensible-systems
                        System.Sound
   ghc-options:         -Wall -O2 -threaded -rtsopts -with-rtsopts=-N
   build-depends:       base
-                     , extensible-systems
+                     , extensible-ecs
                      , vault
                      , lens
                      , mtl
@@ -54,4 +54,4 @@ executable extensible-systems
 
 source-repository head
   type:     git
-  location: https://github.com/lukexi/extensible-systems
+  location: https://github.com/lukexi/extensible-ecs

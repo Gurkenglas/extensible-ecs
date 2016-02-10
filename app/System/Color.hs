@@ -4,7 +4,7 @@
 {-# LANGUAGE TemplateHaskell #-}
 module System.Color where
 import Control.Monad.State
-import Rumpus
+import Data.ECS
 import System.Random
 import Data.Yaml
 import GHC.Generics
@@ -20,15 +20,15 @@ defineComponentKey ''Color
 initSystemColor :: (MonadIO m, HasECS s, MonadState s m) => m ()
 initSystemColor = do
     
-    registerSystem colorSystemKey newColorSystem
+    registerSystem sysColor newColorSystem
 
-    registerComponent "Color" colorKey $ ComponentInterface 
-        { ciAddComponent     = \entityID -> withSystem colorSystemKey $ \(ColorSystem options) -> do
+    registerComponent "Color" cmpColor $ ComponentInterface 
+        { ciAddComponent     = \entityID -> withSystem sysColor $ \(ColorSystem options) -> do
                 randomColorIdx <- liftIO (randomRIO (0, length options - 1))
                 let chosenColor = options !! randomColorIdx
-                addComponentToEntity colorKey (Color chosenColor) entityID
-        , ciExtractComponent = Just (getComponentJSON colorKey)
-        , ciRemoveComponent  = removeComponentFromEntity colorKey
+                addComponent cmpColor (Color chosenColor) entityID
+        , ciExtractComponent = Just (getComponentJSON cmpColor)
+        , ciRemoveComponent  = removeComponent cmpColor
         }
 
 newColorSystem :: ColorSystem
@@ -36,7 +36,7 @@ newColorSystem = ColorSystem ["red", "blue", "green"]
 
 tickSystemColor :: (HasECS s, MonadState s m, MonadIO m) => m ()
 tickSystemColor = do
-    traverseEntitiesWithComponent colorKey $ \(entityID, color) ->
+    traverseEntitiesWithComponent cmpColor $ \(entityID, color) ->
         liftIO (print (entityID, color))
     return ()
 

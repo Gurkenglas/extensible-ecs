@@ -2,7 +2,7 @@
 {-# LANGUAGE TemplateHaskell #-}
 module System.Sound where
 import Control.Monad.State
-import Rumpus
+import Data.ECS
 
 data SoundSystem = SoundSystem Int deriving Show
 defineSystemKey ''SoundSystem
@@ -16,10 +16,10 @@ defineComponentKey ''SoundSource
 
 initSystemSound :: (HasECS s, MonadState s m) => m ()
 initSystemSound = do
-    registerSystem soundSystemKey (SoundSystem 0)
+    registerSystem sysSound (SoundSystem 0)
 
 tickSystemSound :: (HasECS s, MonadState s m, MonadIO m) => m ()
-tickSystemSound = modifySystem soundSystemKey $ \(SoundSystem i) -> do
+tickSystemSound = modifySystem sysSound $ \(SoundSystem i) -> do
     let newValue = (SoundSystem (i + 1))
     liftIO . print $ newValue
     return newValue

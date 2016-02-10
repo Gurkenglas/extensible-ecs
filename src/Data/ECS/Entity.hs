@@ -3,14 +3,14 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-module Rumpus.Entity where
+module Data.ECS.Entity where
 import Control.Lens
 import Prelude hiding (lookup)
 import Control.Monad.State
 import qualified Data.Map as Map
 import System.Random
 import Data.List
-import Rumpus.Types
+import Data.ECS.Types
 
 
 newEntity :: MonadIO m => m EntityID

@@ -2,14 +2,14 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE RecordWildCards #-}
 
-module Rumpus.System where
+module Data.ECS.System where
 import qualified Data.Vault.Strict as Vault
 import Data.Vault.Strict (Key)
 import Control.Lens
 import Prelude hiding (lookup)
 import Control.Monad.State
 
-import Rumpus.Types
+import Data.ECS.Types
 
 registerSystem :: (HasECS s, MonadState s m) => Key a -> a -> m ()
 registerSystem systemKey system = ecs . wldSystems %= Vault.insert systemKey system

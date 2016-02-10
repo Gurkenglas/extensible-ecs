@@ -4,7 +4,7 @@
 {-# LANGUAGE DeriveAnyClass #-}
 module System.Physics where
 import Control.Monad.State
-import Rumpus
+import Data.ECS
 import Data.Yaml
 import GHC.Generics
 import Control.Lens
@@ -15,10 +15,10 @@ data PhysicsSystem = PhysicsSystem { _psDynamicsWorld :: DynamicsWorld } derivin
 makeLenses ''PhysicsSystem
 defineSystemKey ''PhysicsSystem
 
-newtype Mass = Mass { _cmpMass :: Float } deriving (Show, Generic, ToJSON, FromJSON)
+newtype Mass = Mass { unMass :: Float } deriving (Show, Generic, ToJSON, FromJSON)
 defineComponentKey ''Mass
 
-newtype Restitution = Restitution { _cmpRestitution :: Float } deriving (Show, Generic, ToJSON, FromJSON)
+newtype Restitution = Restitution { unRestitution :: Float } deriving (Show, Generic, ToJSON, FromJSON)
 defineComponentKey ''Restitution
 
 defineComponentKey ''RigidBody
@@ -26,26 +26,26 @@ defineComponentKey ''RigidBody
 initSystemPhysics :: (MonadIO m, HasECS s, MonadState s m) => m ()
 initSystemPhysics = do
     dynamicsWorld <- createDynamicsWorld mempty
-    registerSystem physicsSystemKey (PhysicsSystem dynamicsWorld)
+    registerSystem sysPhysics (PhysicsSystem dynamicsWorld)
 
-    registerComponent "RigidBody" rigidBodyKey $ ComponentInterface 
+    registerComponent "RigidBody" cmpRigidBody $ ComponentInterface 
         { ciAddComponent     = \entityID -> do
                 let bodyInfo = mempty
                 shape <- createBoxShape (1 :: V3 Float)
                 rigidBody <- addRigidBody dynamicsWorld (CollisionObjectID entityID) shape bodyInfo
-                addComponentToEntity rigidBodyKey rigidBody entityID
+                addComponent cmpRigidBody rigidBody entityID
         , ciExtractComponent = Nothing
         , ciRemoveComponent  = \entityID -> 
-                withComponent entityID rigidBodyKey $ \rigidBody -> do
+                withComponent entityID cmpRigidBody $ \rigidBody -> do
                     removeRigidBody dynamicsWorld rigidBody
-                    removeComponentFromEntity rigidBodyKey entityID
+                    removeComponent cmpRigidBody entityID
         }
-    registerComponentSimple "Mass"        massKey        (Mass 2)
-    registerComponentSimple "Restitution" restitutionKey (Restitution 20)
+    registerComponentSimple "Mass"        cmpMass        (Mass 2)
+    registerComponentSimple "Restitution" cmpRestitution (Restitution 20)
 
 tickSystemPhysics :: (HasECS s, MonadState s m, MonadIO m) => m ()
 tickSystemPhysics = do
-    withSystem physicsSystemKey $ \(PhysicsSystem dynamicsWorld) -> stepSimulation dynamicsWorld 90
+    withSystem sysPhysics $ \(PhysicsSystem dynamicsWorld) -> stepSimulation dynamicsWorld 90
     return ()
 
 

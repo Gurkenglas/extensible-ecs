@@ -3,7 +3,7 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
-module Rumpus.Component where
+module Data.ECS.Component where
 import qualified Data.Vault.Strict as Vault
 import Data.Vault.Strict (Key)
 import Control.Lens
@@ -12,7 +12,7 @@ import Control.Monad.State
 import qualified Data.Map as Map
 import Data.Yaml hiding ((.=))
 
-import Rumpus.Types
+import Data.ECS.Types
 
 registerComponent :: (HasECS s, MonadState s m) => String -> Key (EntityMap a) -> ComponentInterface -> m ()
 registerComponent name componentKey componentInterface = do
@@ -22,8 +22,8 @@ registerComponent name componentKey componentInterface = do
 registerComponentSimple :: (ToJSON a, MonadState s m, HasECS s) => String -> Key (EntityMap a) -> a -> m ()
 registerComponentSimple name componentKey initialValue = 
     registerComponent name componentKey $ ComponentInterface 
-        { ciAddComponent     = addComponentToEntity componentKey initialValue
-        , ciRemoveComponent  = removeComponentFromEntity componentKey
+        { ciAddComponent     = addComponent componentKey initialValue
+        , ciRemoveComponent  = removeComponent componentKey
         , ciExtractComponent = Just (getComponentJSON componentKey)
         }
 
@@ -41,12 +41,12 @@ traverseEntitiesWithComponent componentKey action =
     withComponentMap_ componentKey $ \componentMap -> 
         forM_ (Map.toList componentMap) action
 
-addComponentToEntity :: (HasECS s, MonadState s m) => Key (EntityMap a) -> a -> EntityID -> m ()
-addComponentToEntity componentKey value entityID = 
+addComponent :: (HasECS s, MonadState s m) => Key (EntityMap a) -> a -> EntityID -> m ()
+addComponent componentKey value entityID = 
     ecs . wldComponents %= Vault.adjust (Map.insert entityID value) componentKey
 
-removeComponentFromEntity :: (HasECS s, MonadState s m) => Key (EntityMap a) -> EntityID -> m ()
-removeComponentFromEntity componentKey entityID = 
+removeComponent :: (HasECS s, MonadState s m) => Key (EntityMap a) -> EntityID -> m ()
+removeComponent componentKey entityID = 
     ecs . wldComponents %= Vault.adjust (Map.delete entityID) componentKey
 
 withComponent :: (HasECS s, MonadState s m) => EntityID -> Key (EntityMap a) -> (a -> m b) -> m ()
