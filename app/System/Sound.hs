@@ -14,12 +14,12 @@ data SoundSource = SoundSource
 defineComponentKey ''SoundSource
 
 
-initSystemSound :: (HasECS s, MonadState s m) => m ()
+initSystemSound :: (MonadState ECS m) => m ()
 initSystemSound = do
     registerSystem sysSound (SoundSystem 0)
 
-tickSystemSound :: (HasECS s, MonadState s m, MonadIO m) => m ()
-tickSystemSound = modifySystem sysSound $ \(SoundSystem i) -> do
+tickSystemSound :: (MonadState ECS m, MonadIO m) => m ()
+tickSystemSound = modifySystem_ sysSound $ \(SoundSystem i) -> do
     let newValue = (SoundSystem (i + 1))
     liftIO . print $ newValue
     return newValue

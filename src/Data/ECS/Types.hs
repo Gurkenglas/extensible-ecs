@@ -34,9 +34,9 @@ newECS :: ECS
 newECS = ECS mempty mempty mempty mempty
 
 data ComponentInterface = ComponentInterface
-    { ciAddComponent     :: forall s m. (HasECS s, MonadState s m, MonadIO m) => (EntityID -> m ())
-    , ciRemoveComponent  :: forall s m. (HasECS s, MonadState s m, MonadIO m) => (EntityID -> m ())
-    , ciExtractComponent :: forall s m. (HasECS s, MonadState s m, MonadIO m) => Maybe (EntityID -> m (Maybe Value))
+    { ciAddComponent     :: forall m. (MonadState ECS m, MonadIO m) => (EntityID -> m ())
+    , ciRemoveComponent  :: forall m. (MonadState ECS m, MonadIO m) => (EntityID -> m ())
+    , ciExtractComponent :: forall m. (MonadState ECS m, MonadIO m) => Maybe (EntityID -> m (Maybe Value))
     }
 
 class HasECS s where

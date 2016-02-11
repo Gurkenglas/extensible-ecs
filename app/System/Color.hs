@@ -17,13 +17,13 @@ defineSystemKey ''ColorSystem
 data Color = Color ColorOption deriving (Show, Generic, ToJSON)
 defineComponentKey ''Color
 
-initSystemColor :: (MonadIO m, HasECS s, MonadState s m) => m ()
+initSystemColor :: (MonadIO m, MonadState ECS m) => m ()
 initSystemColor = do
     
     registerSystem sysColor newColorSystem
 
     registerComponent "Color" cmpColor $ ComponentInterface 
-        { ciAddComponent     = \entityID -> withSystem sysColor $ \(ColorSystem options) -> do
+        { ciAddComponent     = \entityID -> withSystem_ sysColor $ \(ColorSystem options) -> do
                 randomColorIdx <- liftIO (randomRIO (0, length options - 1))
                 let chosenColor = options !! randomColorIdx
                 addComponent cmpColor (Color chosenColor) entityID
@@ -34,9 +34,9 @@ initSystemColor = do
 newColorSystem :: ColorSystem
 newColorSystem = ColorSystem ["red", "blue", "green"]
 
-tickSystemColor :: (HasECS s, MonadState s m, MonadIO m) => m ()
+tickSystemColor :: (MonadState ECS m, MonadIO m) => m ()
 tickSystemColor = do
-    traverseEntitiesWithComponent cmpColor $ \(entityID, color) ->
+    forEntitiesWithComponent cmpColor $ \(entityID, color) ->
         liftIO (print (entityID, color))
     return ()
 
