@@ -6,11 +6,17 @@
 module Data.ECS.Entity where
 import Control.Lens
 import Control.Monad.State
+import Control.Monad.Reader
 import qualified Data.Map as Map
 import System.Random
 import Data.List
 import Data.ECS.Types
 
+spawnEntity :: (MonadState ECS m, MonadIO m) => ReaderT EntityID m () -> m ()
+spawnEntity entityDef = do
+    entityID <- newEntity
+    runReaderT entityDef entityID
+    registerEntity entityID
 
 newEntity :: MonadIO m => m EntityID
 newEntity = liftIO randomIO
@@ -19,12 +25,16 @@ newEntity = liftIO randomIO
 createEntity :: (MonadState ECS m, MonadIO m) => m EntityID
 createEntity = do
     entityID <- newEntity
-    library <- use wldComponentLibrary
+
+    library  <- use wldComponentLibrary
     forM_ library (\ComponentInterface{..} -> ciAddComponent entityID)
-    wldEntities %= (entityID:)
+    
+    registerEntity entityID
 
     return entityID
 
+registerEntity :: MonadState ECS m => EntityID -> m ()
+registerEntity entityID = wldEntities %= (entityID:)
 
 removeEntity :: (MonadState ECS m, MonadIO m) => EntityID -> m ()
 removeEntity entityID = do

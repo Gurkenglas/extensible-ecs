@@ -9,9 +9,9 @@ import Data.List
 
 {- |
 Generates definitions of the form:
-{-# NOINLINE soundSystemKey #-}
-soundSystemKey :: Key SoundSystem
-soundSystemKey = unsafePerformIO newKey
+{-# NOINLINE myKey #-}
+myKey :: Key MyType
+myKey = unsafePerformIO newKey
 -}
 defineKey :: String -> TypeQ -> DecsQ
 defineKey keyString keyType = sequence [inlineDecl, signatureDecl, keyDecl]
@@ -24,7 +24,7 @@ defineKey keyString keyType = sequence [inlineDecl, signatureDecl, keyDecl]
 {- |
 defineSystemKey ''PhysicsSystem
 will create a key definition of the form:
-physicsSystemKey :: Key PhysicsSystem
+sysPhysics :: Key PhysicsSystem
 -}
 defineSystemKey :: Name -> DecsQ
 defineSystemKey name = do
@@ -33,14 +33,19 @@ defineSystemKey name = do
 
 
 {- |
-defineComponentKey ''ColorComponent
+defineComponentKey ''Color
 will create a key defintion of the form:
-colorComponentKey :: Key (EntityMap ColorComponent)
+cmpColor :: Key (EntityMap Color)
+cmp1Color :: Key Color
 -}
 defineComponentKey :: Name -> DecsQ
-defineComponentKey name = do
-    let componentKeyName = "cmp" ++ (nameBase name)
-    defineKey componentKeyName (conT ''EntityMap `appT` conT name)
+defineComponentKey name = defineComponentKeyWithType (nameBase name) (conT name)
+
+defineComponentKeyWithType :: String -> TypeQ -> DecsQ
+defineComponentKeyWithType name keyType = defineKey ("cmp" ++ name)  (conT ''EntityMap `appT` keyType)
+    -- (++) 
+        -- <$> defineKey ("cmp" ++ name)  (conT ''EntityMap `appT` keyType)
+        -- <*> defineKey ("cmp1" ++ name) keyType
 
 {- | 
 >>> deleteWord "PhysicsSystem"  

@@ -1,26 +1,32 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DeriveGeneric #-}
 module System.Sound where
 import Control.Monad.State
 import Data.ECS
+import Control.Lens
+import Data.Yaml
+import GHC.Generics
 
-data SoundSystem = SoundSystem Int deriving Show
+data SoundSystem = SoundSystem { _ssBlah :: Int } deriving Show
 defineSystemKey ''SoundSystem
+makeLenses ''SoundSystem
 
 data SoundSource = SoundSource 
     { scChannel  :: Int
     , scSourceID :: Int 
-    } deriving Show
+    } deriving (Show, Generic, FromJSON, ToJSON)
 defineComponentKey ''SoundSource
 
 
 initSystemSound :: (MonadState ECS m) => m ()
 initSystemSound = do
     registerSystem sysSound (SoundSystem 0)
+    registerComponentSimple "SoundSource" cmpSoundSource (SoundSource 100 1000)
 
 tickSystemSound :: (MonadState ECS m, MonadIO m) => m ()
-tickSystemSound = modifySystem_ sysSound $ \(SoundSystem i) -> do
-    let newValue = (SoundSystem (i + 1))
+tickSystemSound = modifySystemState sysSound $ do
+    newValue <- ssBlah <+= 1
     liftIO . print $ newValue
-    return newValue
 

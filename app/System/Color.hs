@@ -27,7 +27,9 @@ initSystemColor = do
                 randomColorIdx <- liftIO (randomRIO (0, length options - 1))
                 let chosenColor = options !! randomColorIdx
                 addComponent cmpColor (Color chosenColor) entityID
+
         , ciExtractComponent = Just (getComponentJSON cmpColor)
+        
         , ciRemoveComponent  = removeComponent cmpColor
         }
 

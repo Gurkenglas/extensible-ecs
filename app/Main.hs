@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleContexts #-}
 module Main where
 import Control.Monad.State
 import Data.ECS
@@ -14,7 +15,16 @@ main = do
         initSystemSound
 
 
-        entity1 <- createEntity
+        let entityDef = do
+                cmpColor       ==> (Color "Cheese")
+                cmpSoundSource ==> (SoundSource 1 2)
+
+
+        spawnEntity entityDef
+        spawnEntity entityDef
+        spawnEntity entityDef
+
+        entityX <- createEntity
         _ <- createEntity
         _ <- createEntity
         replicateM_ 10 $ do
@@ -26,7 +36,7 @@ main = do
         saveEntities
 
         liftIO (putStrLn "Entities after remove:")
-        removeEntity entity1
+        removeEntity entityX
         
         saveEntities
 

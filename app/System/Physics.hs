@@ -11,7 +11,7 @@ import Control.Lens
 import Physics.Bullet
 import Linear.Extra
 
-data PhysicsSystem = PhysicsSystem { _psDynamicsWorld :: DynamicsWorld } deriving Show
+data PhysicsSystem = PhysicsSystem { _phyDynamicsWorld :: DynamicsWorld } deriving Show
 makeLenses ''PhysicsSystem
 defineSystemKey ''PhysicsSystem
 
@@ -45,7 +45,5 @@ initSystemPhysics = do
 
 tickSystemPhysics :: (MonadState ECS m, MonadIO m) => m ()
 tickSystemPhysics = do
-    withSystem sysPhysics $ \(PhysicsSystem dynamicsWorld) -> stepSimulation dynamicsWorld 90
-    return ()
-
-
+    dynamicsWorld <- viewSystem sysPhysics phyDynamicsWorld
+    stepSimulation dynamicsWorld 90
