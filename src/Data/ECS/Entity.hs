@@ -7,7 +7,7 @@ import Control.Lens
 import Control.Monad.State
 import Control.Monad.Reader
 import qualified Data.Map as Map
--- import Data.Map (Map)
+import Data.Map (Map)
 import System.Random
 import Data.List
 import Data.Yaml
@@ -30,11 +30,9 @@ createEntity :: (MonadState ECS m, MonadIO m) => m EntityID
 createEntity = do
     entityID <- newEntity
 
-    library  <- use wldComponentLibrary
-    forM_ library (\ComponentInterface{..} -> forM_ ciAddComponent ($ entityID))
-    forM_ library (\ComponentInterface{..} -> forM_ ciDeriveComponent ($ entityID))
-    
-    registerEntity entityID
+    use wldComponentLibrary >>= mapM_ (\ComponentInterface{..} -> forM_ ciAddComponent ($ entityID))
+
+    activateEntity entityID
 
     return entityID
 
@@ -47,6 +45,15 @@ removeEntity entityID = do
     forM_ library (\ComponentInterface{..} -> ciRemoveComponent entityID)
     wldEntities %= delete entityID
 
+deriveComponents :: (MonadIO m, MonadState ECS m) => EntityID -> m ()
+deriveComponents entityID = 
+    use wldComponentLibrary >>= mapM_ (\ComponentInterface{..} -> forM_ ciDeriveComponent ($ entityID))
+
+-- | Make an entity
+activateEntity :: (MonadIO m, MonadState ECS m) => EntityID -> m ()
+activateEntity entityID = do
+    registerEntity entityID
+    deriveComponents entityID
 
 saveEntities :: (MonadState ECS m, MonadIO m) => m ()
 saveEntities = do
@@ -64,18 +71,22 @@ saveEntities = do
 
 loadScene :: (MonadIO m, MonadState ECS m) => FilePath -> m ()
 loadScene sceneName = do
-    componentInterfaces <- use wldComponentLibrary
     entityFiles <- filter ((== ".yaml") . takeExtension) <$> liftIO (getDirectoryContents sceneName)
     forM_ entityFiles $ \entityFile -> do
         case readEither (takeBaseName entityFile) of
             Left anError -> liftIO $ putStrLn ("Error getting entityID from filename: " ++ show anError)
             Right entityID -> liftIO (decodeFileEither (sceneName </> entityFile)) >>= \case
                 Left parseException -> liftIO $ putStrLn ("Error loading " ++ sceneName ++ ": " ++ show parseException)
-                Right entityValue -> do
-                    forM_ (Map.toList entityValue) $ \(componentName, value) -> 
-                        forM_ (Map.lookup componentName componentInterfaces) $ \ComponentInterface{..} -> 
-                            forM_ ciRestoreComponent $ \restoreComponent -> 
-                                restoreComponent value entityID
-                    forM_ componentInterfaces $ \ComponentInterface{..} -> 
-                        forM_ ciDeriveComponent $ \deriveComponent -> deriveComponent entityID
-                    registerEntity entityID
+                Right entityValue -> 
+                    restoreEntity entityID entityValue
+                    
+
+restoreEntity :: (MonadIO m, MonadState ECS m) => EntityID -> Map ComponentName Value -> m ()
+restoreEntity entityID entityValue = do
+    componentInterfaces <- use wldComponentLibrary
+    forM_ (Map.toList entityValue) $ \(componentName, value) -> 
+        forM_ (Map.lookup componentName componentInterfaces) $ \ComponentInterface{..} -> 
+            forM_ ciRestoreComponent $ \restoreComponent -> 
+                restoreComponent value entityID
+    activateEntity entityID
+
