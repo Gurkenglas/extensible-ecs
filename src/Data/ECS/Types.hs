@@ -41,6 +41,7 @@ data ComponentInterface = ComponentInterface
     { ciAddComponent     :: forall m. (MonadState ECS m, MonadIO m) => (EntityID -> m ())
     , ciRemoveComponent  :: forall m. (MonadState ECS m, MonadIO m) => (EntityID -> m ())
     , ciExtractComponent :: forall m. (MonadState ECS m, MonadIO m) => Maybe (EntityID -> m (Maybe Value))
+    , ciRestoreComponent :: forall m. (MonadState ECS m, MonadIO m) => Maybe (Value -> EntityID -> m ())
     }
 
 -- We can't use makeClassy to define the HasECS class and lenses, 

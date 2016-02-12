@@ -37,12 +37,13 @@ registerComponent name componentKey componentInterface = do
     setComponentMap componentKey mempty
     wldComponentLibrary . at name ?= componentInterface
 
-registerComponentSimple :: (MonadState ECS m, ToJSON a) => String -> Key (EntityMap a) -> a -> m ()
+registerComponentSimple :: (MonadState ECS m, ToJSON a, FromJSON a) => String -> Key (EntityMap a) -> a -> m ()
 registerComponentSimple name componentKey initialValue = 
     registerComponent name componentKey $ ComponentInterface 
         { ciAddComponent     = addComponent componentKey initialValue
         , ciRemoveComponent  = removeComponent componentKey
         , ciExtractComponent = Just (getComponentJSON componentKey)
+        , ciRestoreComponent = Just (setComponentJSON componentKey)
         }
 
 withComponentMap_ :: MonadState ECS m => Key (EntityMap a) -> ((EntityMap a) -> m b) -> m ()
@@ -93,3 +94,10 @@ getComponent entityID componentKey =
 
 getComponentJSON :: (HasComponents s, MonadState s m, ToJSON a) => Key (EntityMap a) -> EntityID -> m (Maybe Value)
 getComponentJSON componentKey entityID = fmap toJSON <$> getComponent entityID componentKey
+
+setComponentJSON :: (MonadIO m, MonadState s m, FromJSON a, HasComponents s) => Key (EntityMap a) -> Value -> EntityID -> m ()
+setComponentJSON componentKey jsonValue entityID = case flip parseEither jsonValue parseJSON of
+    Right value -> setComponent componentKey value entityID
+    Left anError -> liftIO $ putStrLn ("setComponentJSON error: " ++ show anError)
+
+

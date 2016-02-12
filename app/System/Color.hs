@@ -14,7 +14,7 @@ type ColorOption = String
 data ColorSystem = ColorSystem { csColorOptions :: [ColorOption] } deriving Show
 defineSystemKey ''ColorSystem
 
-data Color = Color ColorOption deriving (Show, Generic, ToJSON)
+data Color = Color ColorOption deriving (Show, Generic, ToJSON, FromJSON)
 defineComponentKey ''Color
 
 initSystemColor :: (MonadIO m, MonadState ECS m) => m ()
@@ -29,7 +29,7 @@ initSystemColor = do
                 addComponent cmpColor (Color chosenColor) entityID
 
         , ciExtractComponent = Just (getComponentJSON cmpColor)
-        
+        , ciRestoreComponent = Just (setComponentJSON cmpColor)
         , ciRemoveComponent  = removeComponent cmpColor
         }
 
