@@ -20,21 +20,20 @@ defineComponentKey ''Color
 initSystemColor :: (MonadIO m, MonadState ECS m) => m ()
 initSystemColor = do
     
-    registerSystem sysColor newColorSystem
+    registerSystem sysColor (ColorSystem ["red", "blue", "green"])
 
     registerComponent "Color" cmpColor $ ComponentInterface 
-        { ciAddComponent     = \entityID -> withSystem_ sysColor $ \(ColorSystem options) -> do
+        { ciAddComponent     = Just $ \entityID -> withSystem_ sysColor $ \(ColorSystem options) -> do
                 randomColorIdx <- liftIO (randomRIO (0, length options - 1))
                 let chosenColor = options !! randomColorIdx
                 addComponent cmpColor (Color chosenColor) entityID
 
         , ciExtractComponent = Just (getComponentJSON cmpColor)
         , ciRestoreComponent = Just (setComponentJSON cmpColor)
+        , ciDeriveComponent  = Nothing
         , ciRemoveComponent  = removeComponent cmpColor
         }
 
-newColorSystem :: ColorSystem
-newColorSystem = ColorSystem ["red", "blue", "green"]
 
 tickSystemColor :: (MonadState ECS m, MonadIO m) => m ()
 tickSystemColor = do

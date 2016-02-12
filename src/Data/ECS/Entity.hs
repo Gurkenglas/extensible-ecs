@@ -7,7 +7,7 @@ import Control.Lens
 import Control.Monad.State
 import Control.Monad.Reader
 import qualified Data.Map as Map
-import Data.Map (Map)
+-- import Data.Map (Map)
 import System.Random
 import Data.List
 import Data.Yaml
@@ -31,7 +31,7 @@ createEntity = do
     entityID <- newEntity
 
     library  <- use wldComponentLibrary
-    forM_ library (\ComponentInterface{..} -> ciAddComponent entityID)
+    forM_ library (\ComponentInterface{..} -> forM_ ciAddComponent ($ entityID))
     
     registerEntity entityID
 
@@ -71,9 +71,10 @@ loadScene sceneName = do
             Right entityID -> liftIO (decodeFileEither (sceneName </> entityFile)) >>= \case
                 Left parseException -> liftIO $ putStrLn ("Error loading " ++ sceneName ++ ": " ++ show parseException)
                 Right entityValue -> do
-                    let _ = entityValue :: Map ComponentName Value
-                    registerEntity entityID
-                    forM_ (Map.toList entityValue) $ \(componentName, value) -> do
-                        forM_ (Map.lookup componentName componentInterfaces) $ \ComponentInterface{..} -> do
-                            forM_ ciRestoreComponent $ \restoreComponent -> do
+                    forM_ (Map.toList entityValue) $ \(componentName, value) -> 
+                        forM_ (Map.lookup componentName componentInterfaces) $ \ComponentInterface{..} -> 
+                            forM_ ciRestoreComponent $ \restoreComponent -> 
                                 restoreComponent value entityID
+                    forM_ componentInterfaces $ \ComponentInterface{..} -> 
+                        forM_ ciDeriveComponent $ \deriveComponent -> deriveComponent entityID
+                    registerEntity entityID

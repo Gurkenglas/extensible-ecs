@@ -15,6 +15,9 @@ data PhysicsSystem = PhysicsSystem { _phyDynamicsWorld :: DynamicsWorld } derivi
 makeLenses ''PhysicsSystem
 defineSystemKey ''PhysicsSystem
 
+data ShapeType = CubeShape | SphereShape deriving (Show, Generic, ToJSON, FromJSON)
+defineComponentKey ''ShapeType
+
 newtype Mass = Mass { unMass :: Float } deriving (Show, Generic, ToJSON, FromJSON)
 defineComponentKey ''Mass
 
@@ -29,20 +32,27 @@ initSystemPhysics = do
     registerSystem sysPhysics (PhysicsSystem dynamicsWorld)
 
     registerComponent "RigidBody" cmpRigidBody $ ComponentInterface 
-        { ciAddComponent     = \entityID -> do
-                let bodyInfo = mempty
-                shape <- createBoxShape (1 :: V3 Float)
-                rigidBody <- addRigidBody dynamicsWorld (CollisionObjectID entityID) shape bodyInfo
-                addComponent cmpRigidBody rigidBody entityID
+        { ciAddComponent     = Nothing
         , ciExtractComponent = Nothing
         , ciRestoreComponent = Nothing
+        , ciDeriveComponent = Just (\entityID -> do
+            let bodyInfo = mempty
+            mShapeType <- getComponent entityID cmpShapeType
+            forM_ mShapeType $ \shapeType -> do
+                shape     <- case shapeType of 
+                    CubeShape -> createBoxShape (1 :: V3 Float)
+                    SphereShape -> createSphereShape (1 :: Float)
+                rigidBody <- addRigidBody dynamicsWorld (CollisionObjectID entityID) shape bodyInfo
+                addComponent cmpRigidBody rigidBody entityID
+            )
         , ciRemoveComponent  = \entityID -> 
                 withComponent entityID cmpRigidBody $ \rigidBody -> do
                     removeRigidBody dynamicsWorld rigidBody
                     removeComponent cmpRigidBody entityID
         }
-    registerComponentSimple "Mass"        cmpMass        (Mass 2)
-    registerComponentSimple "Restitution" cmpRestitution (Restitution 20)
+    registerComponent "Mass"        cmpMass        (defaultComponentInterface cmpMass (Mass 2))
+    registerComponent "Restitution" cmpRestitution (defaultComponentInterface cmpRestitution (Restitution 20))
+    registerComponent "ShapeType"   cmpShapeType   (defaultComponentInterface cmpShapeType CubeShape)
 
 tickSystemPhysics :: (MonadState ECS m, MonadIO m) => m ()
 tickSystemPhysics = do

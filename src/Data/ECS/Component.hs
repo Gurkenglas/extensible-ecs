@@ -37,16 +37,39 @@ registerComponent name componentKey componentInterface = do
     setComponentMap componentKey mempty
     wldComponentLibrary . at name ?= componentInterface
 
-registerComponentSimple :: (MonadState ECS m, ToJSON a, FromJSON a) => String -> Key (EntityMap a) -> a -> m ()
-registerComponentSimple name componentKey initialValue = 
-    registerComponent name componentKey $ ComponentInterface 
-        { ciAddComponent     = addComponent componentKey initialValue
-        , ciRemoveComponent  = removeComponent componentKey
-        , ciExtractComponent = Just (getComponentJSON componentKey)
-        , ciRestoreComponent = Just (setComponentJSON componentKey)
-        }
+newComponentInterface :: Key (EntityMap a) -> ComponentInterface
+newComponentInterface componentKey = ComponentInterface 
+    { ciAddComponent     = Nothing
+    , ciRemoveComponent  = removeComponent componentKey
+    , ciExtractComponent = Nothing
+    , ciRestoreComponent = Nothing
+    , ciDeriveComponent  = Nothing
+    }
 
-withComponentMap_ :: MonadState ECS m => Key (EntityMap a) -> ((EntityMap a) -> m b) -> m ()
+savedComponentInterface :: (ToJSON a, FromJSON a) => Key (EntityMap a) -> ComponentInterface
+savedComponentInterface componentKey = ComponentInterface 
+    { ciAddComponent     = Nothing
+    , ciRemoveComponent  = removeComponent componentKey
+    , ciExtractComponent = Just (getComponentJSON componentKey)
+    , ciRestoreComponent = Just (setComponentJSON componentKey)
+    , ciDeriveComponent  = Nothing
+    }
+
+defaultComponentInterface :: (ToJSON a, FromJSON a) => Key (EntityMap a) -> a -> ComponentInterface
+defaultComponentInterface componentKey defaultValue = (savedComponentInterface componentKey)
+    { ciAddComponent = Just (addComponent componentKey defaultValue) }
+
+-- registerComponentSimple :: (MonadState ECS m, ToJSON a, FromJSON a) => String -> Key (EntityMap a) -> a -> m ()
+-- registerComponentSimple name componentKey initialValue = 
+--     registerComponent name componentKey $ ComponentInterface 
+--         { ciAddComponent     = Just (addComponent componentKey initialValue)
+--         , ciRemoveComponent  = removeComponent componentKey
+--         , ciExtractComponent = Just (getComponentJSON componentKey)
+--         , ciRestoreComponent = Just (setComponentJSON componentKey)
+--         , ciDeriveComponent  = Nothing
+--         }
+
+withComponentMap_ :: (HasComponents s, MonadState s m) => Key (EntityMap a) -> ((EntityMap a) -> m b) -> m ()
 withComponentMap_ componentKey = void . withComponentMap componentKey
 
 withComponentMap :: (HasComponents s, MonadState s m) => Key (EntityMap a) -> ((EntityMap a) -> m b) -> m (Maybe b)

@@ -23,7 +23,7 @@ defineComponentKey ''SoundSource
 initSystemSound :: (MonadState ECS m) => m ()
 initSystemSound = do
     registerSystem sysSound (SoundSystem 0)
-    registerComponentSimple "SoundSource" cmpSoundSource (SoundSource 100 1000)
+    registerComponent "SoundSource" cmpSoundSource (defaultComponentInterface cmpSoundSource (SoundSource 100 1000))
 
 tickSystemSound :: (MonadState ECS m, MonadIO m) => m ()
 tickSystemSound = modifySystemState sysSound $ do

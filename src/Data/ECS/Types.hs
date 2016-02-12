@@ -38,10 +38,11 @@ newECS :: ECS
 newECS = ECS mempty mempty mempty mempty mempty
 
 data ComponentInterface = ComponentInterface
-    { ciAddComponent     :: forall m. (MonadState ECS m, MonadIO m) => (EntityID -> m ())
+    { ciAddComponent     :: forall m. (MonadState ECS m, MonadIO m) => Maybe (EntityID -> m ())
     , ciRemoveComponent  :: forall m. (MonadState ECS m, MonadIO m) => (EntityID -> m ())
     , ciExtractComponent :: forall m. (MonadState ECS m, MonadIO m) => Maybe (EntityID -> m (Maybe Value))
     , ciRestoreComponent :: forall m. (MonadState ECS m, MonadIO m) => Maybe (Value -> EntityID -> m ())
+    , ciDeriveComponent  :: forall m. (MonadState ECS m, MonadIO m) => Maybe (EntityID -> m ())
     }
 
 -- We can't use makeClassy to define the HasECS class and lenses, 
