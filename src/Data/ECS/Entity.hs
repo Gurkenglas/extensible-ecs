@@ -32,6 +32,7 @@ createEntity = do
 
     library  <- use wldComponentLibrary
     forM_ library (\ComponentInterface{..} -> forM_ ciAddComponent ($ entityID))
+    forM_ library (\ComponentInterface{..} -> forM_ ciDeriveComponent ($ entityID))
     
     registerEntity entityID
 
