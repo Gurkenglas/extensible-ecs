@@ -55,19 +55,10 @@ savedComponentInterface componentKey = ComponentInterface
     , ciDeriveComponent  = Nothing
     }
 
+-- | As in, this component should be added to new entites by default
 defaultComponentInterface :: (ToJSON a, FromJSON a) => Key (EntityMap a) -> a -> ComponentInterface
 defaultComponentInterface componentKey defaultValue = (savedComponentInterface componentKey)
     { ciAddComponent = Just (addComponent componentKey defaultValue) }
-
--- registerComponentSimple :: (MonadState ECS m, ToJSON a, FromJSON a) => String -> Key (EntityMap a) -> a -> m ()
--- registerComponentSimple name componentKey initialValue = 
---     registerComponent name componentKey $ ComponentInterface 
---         { ciAddComponent     = Just (addComponent componentKey initialValue)
---         , ciRemoveComponent  = removeComponent componentKey
---         , ciExtractComponent = Just (getComponentJSON componentKey)
---         , ciRestoreComponent = Just (setComponentJSON componentKey)
---         , ciDeriveComponent  = Nothing
---         }
 
 withComponentMap_ :: (HasComponents s, MonadState s m) => Key (EntityMap a) -> ((EntityMap a) -> m b) -> m ()
 withComponentMap_ componentKey = void . withComponentMap componentKey

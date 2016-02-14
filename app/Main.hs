@@ -21,13 +21,13 @@ main = do
         --         cmpSoundSource ==> (SoundSource 1 2)
 
 
-        -- -- spawnEntity entityDef
-        -- -- spawnEntity entityDef
-        -- -- spawnEntity entityDef
+        -- -- spawnEntity Persistent entityDef
+        -- -- spawnEntity Persistent entityDef
+        -- -- spawnEntity Persistent entityDef
 
-        -- -- entityX <- createEntity
-        -- -- _ <- createEntity
-        -- -- _ <- createEntity
+        -- -- entityX <- createEntity Persistent
+        -- -- _ <- createEntity Persistent
+        -- -- _ <- createEntity Persistent
         -- -- replicateM_ 10 $ do
         -- --     tickSystemColor
         -- --     tickSystemPhysics
