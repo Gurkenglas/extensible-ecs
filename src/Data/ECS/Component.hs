@@ -15,8 +15,7 @@ import Data.Yaml hiding ((.=))
 import Data.Maybe
 import Data.ECS.Types
 
-
-
+infixl 0 ==>
 (==>) :: (MonadState s m, MonadReader EntityID m, HasComponents s) => Key (EntityMap a) -> a -> m ()
 componentKey ==> value = addComponent componentKey value =<< ask
 
@@ -47,18 +46,16 @@ newComponentInterface componentKey = ComponentInterface
     }
 
 savedComponentInterface :: (ToJSON a, FromJSON a) => Key (EntityMap a) -> ComponentInterface
-savedComponentInterface componentKey = ComponentInterface 
-    { ciAddComponent     = Nothing
-    , ciRemoveComponent  = removeComponent componentKey
-    , ciExtractComponent = Just (getComponentJSON componentKey)
+savedComponentInterface componentKey = (newComponentInterface componentKey)
+    { ciExtractComponent = Just (getComponentJSON componentKey)
     , ciRestoreComponent = Just (setComponentJSON componentKey)
-    , ciDeriveComponent  = Nothing
     }
 
 -- | As in, this component should be added to new entites by default
 defaultComponentInterface :: (ToJSON a, FromJSON a) => Key (EntityMap a) -> a -> ComponentInterface
 defaultComponentInterface componentKey defaultValue = (savedComponentInterface componentKey)
-    { ciAddComponent = Just (addComponent componentKey defaultValue) }
+    { ciAddComponent = Just (addComponent componentKey defaultValue) 
+    }
 
 withComponentMap_ :: (HasComponents s, MonadState s m) => Key (EntityMap a) -> ((EntityMap a) -> m b) -> m ()
 withComponentMap_ componentKey = void . withComponentMap componentKey
