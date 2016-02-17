@@ -10,7 +10,7 @@ import GHC.Generics
 import Control.Lens
 import Physics.Bullet
 import Linear.Extra
-
+import Control.Monad.Reader
 data PhysicsSystem = PhysicsSystem { _phyDynamicsWorld :: DynamicsWorld } deriving Show
 makeLenses ''PhysicsSystem
 defineSystemKey ''PhysicsSystem
@@ -35,20 +35,20 @@ initSystemPhysics = do
         { ciAddComponent     = Nothing
         , ciExtractComponent = Nothing
         , ciRestoreComponent = Nothing
-        , ciDeriveComponent = Just (\entityID -> do
+        , ciDeriveComponent = Just $ do
             let bodyInfo = mempty
-            mShapeType <- getComponent entityID cmpShapeType
+            mShapeType <- getComponent cmpShapeType
             forM_ mShapeType $ \shapeType -> do
                 shape     <- case shapeType of 
                     CubeShape -> createBoxShape (1 :: V3 Float)
                     SphereShape -> createSphereShape (1 :: Float)
+                entityID <- ask
                 rigidBody <- addRigidBody dynamicsWorld (CollisionObjectID entityID) shape bodyInfo
-                addComponent cmpRigidBody rigidBody entityID
-            )
-        , ciRemoveComponent  = \entityID -> 
-                withComponent entityID cmpRigidBody $ \rigidBody -> do
+                addComponent cmpRigidBody rigidBody
+        , ciRemoveComponent  = 
+                withComponent cmpRigidBody $ \rigidBody -> do
                     removeRigidBody dynamicsWorld rigidBody
-                    removeComponent cmpRigidBody entityID
+                    removeComponent cmpRigidBody
         }
     registerComponent "Mass"        cmpMass        (defaultComponentInterface cmpMass (Mass 2))
     registerComponent "Restitution" cmpRestitution (defaultComponentInterface cmpRestitution (Restitution 20))

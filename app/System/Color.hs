@@ -23,10 +23,10 @@ initSystemColor = do
     registerSystem sysColor (ColorSystem ["red", "blue", "green"])
 
     registerComponent "Color" cmpColor $ ComponentInterface 
-        { ciAddComponent     = Just $ \entityID -> withSystem_ sysColor $ \(ColorSystem options) -> do
+        { ciAddComponent     = Just $ withSystem_ sysColor $ \(ColorSystem options) -> do
                 randomColorIdx <- liftIO (randomRIO (0, length options - 1))
                 let chosenColor = options !! randomColorIdx
-                addComponent cmpColor (Color chosenColor) entityID
+                addComponent cmpColor (Color chosenColor)
 
         , ciExtractComponent = Just (getComponentJSON cmpColor)
         , ciRestoreComponent = Just (setComponentJSON cmpColor)

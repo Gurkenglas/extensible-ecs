@@ -17,7 +17,7 @@ import Data.ECS.Types
 
 infixl 0 ==>
 (==>) :: (MonadState s m, MonadReader EntityID m, HasComponents s) => Key (EntityMap a) -> a -> m ()
-componentKey ==> value = addComponent componentKey value =<< ask
+componentKey ==> value = addComponent componentKey value
 
 setComponentMap :: (MonadState s m, HasComponents s) => Key a -> a -> m ()
 setComponentMap componentKey value = 
@@ -76,39 +76,52 @@ forEntitiesWithComponent componentKey action =
         forM_ (Map.toList componentMap) action
 
 
+setComponent :: (MonadReader EntityID m, HasComponents s, MonadState s m) => Key (EntityMap a) -> a -> m ()
+setComponent componentKey value = addEntityComponent componentKey value =<< ask
 
-addComponent :: (HasComponents s, MonadState s m) => Key (EntityMap a) -> a -> EntityID -> m ()
-addComponent componentKey value entityID = modifyComponents componentKey (Map.insert entityID value)
+addComponent :: (MonadReader EntityID m, HasComponents s, MonadState s m) => Key (EntityMap a) -> a -> m ()
+addComponent = setComponent
 
-setComponent :: (HasComponents s, MonadState s m) => Key (EntityMap a) -> a -> EntityID -> m ()
-setComponent = addComponent
+addEntityComponent :: (HasComponents s, MonadState s m) => Key (EntityMap a) -> a -> EntityID -> m ()
+addEntityComponent componentKey value entityID = modifyComponents componentKey (Map.insert entityID value)
 
-removeComponent :: (HasComponents s, MonadState s m) => Key (EntityMap a) -> EntityID -> m ()
-removeComponent componentKey entityID = modifyComponents componentKey (Map.delete entityID)
+setEntityComponent :: (HasComponents s, MonadState s m) => Key (EntityMap a) -> a -> EntityID -> m ()
+setEntityComponent = addEntityComponent
 
-withComponent :: (HasComponents s, MonadState s m) => EntityID -> Key (EntityMap a) -> (a -> m b) -> m ()
-withComponent entityID componentKey action = do
-    maybeComponent <- getComponent entityID componentKey
-    forM_ maybeComponent action
+removeComponent :: (MonadReader EntityID m, HasComponents s, MonadState s m) => Key (EntityMap a) -> m ()
+removeComponent componentKey = removeEntityComponent componentKey =<< ask
 
-modifyComponent :: (HasComponents s, MonadState s m) => EntityID -> Key (EntityMap a) -> (a -> m a) -> m ()
-modifyComponent entityID componentKey action = do
-    maybeComponent <- getComponent entityID componentKey
+removeEntityComponent :: (HasComponents s, MonadState s m) => Key (EntityMap a) -> EntityID -> m ()
+removeEntityComponent componentKey entityID = modifyComponents componentKey (Map.delete entityID)
+
+withComponent :: (MonadReader EntityID m, HasComponents s, MonadState s m) => Key (EntityMap a) -> (a -> m b) -> m ()
+withComponent componentKey action = mapM_ action =<< getComponent componentKey
+
+withEntityComponent :: (MonadState s m, HasComponents s) => EntityID -> Key (EntityMap a) -> (a -> m b) -> m ()
+withEntityComponent entityID componentKey action = mapM_ action =<< getEntityComponent entityID componentKey
+
+modifyComponent :: (MonadReader EntityID m, HasComponents s, MonadState s m) => Key (EntityMap a) -> (a -> m a) -> m ()
+modifyComponent componentKey action = do
+    maybeComponent <- getComponent componentKey
     mapM action maybeComponent >>= \case
-        Just newValue -> addComponent componentKey newValue entityID
+        Just newValue -> addComponent componentKey newValue
         Nothing -> return ()
 
-getComponent :: (HasComponents s, MonadState s m) => EntityID -> Key (EntityMap a) -> m (Maybe a)
-getComponent entityID componentKey = 
+getComponent :: (HasComponents s, MonadState s m, MonadReader EntityID m) => Key (EntityMap a) -> m (Maybe a)
+getComponent componentKey = ask >>= \eid -> getEntityComponent eid componentKey
+
+getEntityComponent :: (HasComponents s, MonadState s m) => EntityID -> Key (EntityMap a) -> m (Maybe a)
+getEntityComponent entityID componentKey = 
     fmap join $ withComponentMap componentKey $ \componentMap ->
         return $ Map.lookup entityID componentMap
 
-getComponentJSON :: (HasComponents s, MonadState s m, ToJSON a) => Key (EntityMap a) -> EntityID -> m (Maybe Value)
-getComponentJSON componentKey entityID = fmap toJSON <$> getComponent entityID componentKey
 
-setComponentJSON :: (MonadIO m, MonadState s m, FromJSON a, HasComponents s) => Key (EntityMap a) -> Value -> EntityID -> m ()
-setComponentJSON componentKey jsonValue entityID = case flip parseEither jsonValue parseJSON of
-    Right value -> setComponent componentKey value entityID
+getComponentJSON :: (MonadReader EntityID m, HasComponents s, MonadState s m, ToJSON a) => Key (EntityMap a) -> m (Maybe Value)
+getComponentJSON componentKey = fmap toJSON <$> getComponent componentKey
+
+setComponentJSON :: (MonadReader EntityID m, MonadIO m, MonadState s m, FromJSON a, HasComponents s) => Key (EntityMap a) -> Value -> m ()
+setComponentJSON componentKey jsonValue = case flip parseEither jsonValue parseJSON of
+    Right value -> setComponent componentKey value
     Left anError -> liftIO $ putStrLn ("setComponentJSON error: " ++ show anError)
 
 

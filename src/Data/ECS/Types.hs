@@ -12,6 +12,7 @@ import GHC.Word
 
 import Control.Lens
 import Control.Monad.State
+import Control.Monad.Reader
 
 import Data.Yaml
 
@@ -23,6 +24,10 @@ type ComponentName = String
 type EntityName = String
 
 type ECSMonad = StateT ECS IO
+type EntityMonad = ReaderT EntityID ECSMonad
+
+runEntity :: EntityID -> ReaderT EntityID m a -> m a
+runEntity entityID action = runReaderT action entityID
 
 newtype Components = Components { _unComponents :: Vault } deriving Monoid
 
@@ -38,11 +43,11 @@ newECS :: ECS
 newECS = ECS mempty mempty mempty mempty mempty
 
 data ComponentInterface = ComponentInterface
-    { ciAddComponent     :: forall m. (MonadState ECS m, MonadIO m) => Maybe (EntityID -> m ())
-    , ciRemoveComponent  :: forall m. (MonadState ECS m, MonadIO m) => (EntityID -> m ())
-    , ciExtractComponent :: forall m. (MonadState ECS m, MonadIO m) => Maybe (EntityID -> m (Maybe Value))
-    , ciRestoreComponent :: forall m. (MonadState ECS m, MonadIO m) => Maybe (Value -> EntityID -> m ())
-    , ciDeriveComponent  :: forall m. (MonadState ECS m, MonadIO m) => Maybe (EntityID -> m ())
+    { ciAddComponent     :: forall m. (MonadReader EntityID m, MonadState ECS m, MonadIO m) => Maybe (m ())
+    , ciRemoveComponent  :: forall m. (MonadReader EntityID m, MonadState ECS m, MonadIO m) => (m ())
+    , ciExtractComponent :: forall m. (MonadReader EntityID m, MonadState ECS m, MonadIO m) => Maybe (m (Maybe Value))
+    , ciRestoreComponent :: forall m. (MonadReader EntityID m, MonadState ECS m, MonadIO m) => Maybe (Value -> m ())
+    , ciDeriveComponent  :: forall m. (MonadReader EntityID m, MonadState ECS m, MonadIO m) => Maybe (m ())
     }
 
 -- We can't use makeClassy to define the HasECS class and lenses, 

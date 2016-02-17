@@ -43,7 +43,7 @@ createEntity persistence = do
 
 addDefaultComponents :: (MonadIO m, MonadState ECS m) => EntityID -> m ()
 addDefaultComponents entityID = 
-    use wldComponentLibrary >>= mapM_ (\ComponentInterface{..} -> forM_ ciAddComponent ($ entityID))
+    use wldComponentLibrary >>= mapM_ (\ComponentInterface{..} -> forM_ ciAddComponent (runEntity entityID))
 
 registerEntity :: MonadState ECS m => EntityID -> m ()
 registerEntity entityID = wldEntities %= (entityID:)
@@ -51,12 +51,12 @@ registerEntity entityID = wldEntities %= (entityID:)
 removeEntity :: (MonadState ECS m, MonadIO m) => EntityID -> m ()
 removeEntity entityID = do
     library <- use wldComponentLibrary
-    forM_ library (\ComponentInterface{..} -> ciRemoveComponent entityID)
+    forM_ library (\ComponentInterface{..} -> runEntity entityID ciRemoveComponent)
     wldEntities %= delete entityID
 
 deriveComponents :: (MonadIO m, MonadState ECS m) => EntityID -> m ()
 deriveComponents entityID = 
-    use wldComponentLibrary >>= mapM_ (\ComponentInterface{..} -> forM_ ciDeriveComponent ($ entityID))
+    use wldComponentLibrary >>= mapM_ (\ComponentInterface{..} -> forM_ ciDeriveComponent (runEntity entityID))
 
 -- | Registers an entity in the list of all entities, and
 -- converts inert properties into live ones
@@ -73,7 +73,7 @@ saveEntities = do
     componentInterfaces <- Map.toList <$> use wldComponentLibrary
     forM_ entities $ \entityID -> do
         yaml <- foldM (\entityMap (componentName, ComponentInterface{..}) -> do
-            mValue <- join <$> forM ciExtractComponent ($ entityID)
+            mValue <- join <$> forM ciExtractComponent (runEntity entityID)
             return $ case mValue of
                 Just value -> Map.insert componentName value entityMap
                 Nothing -> entityMap
@@ -104,6 +104,6 @@ restoreEntity entityID entityValue = do
     forM_ (Map.toList entityValue) $ \(componentName, value) -> 
         forM_ (Map.lookup componentName componentInterfaces) $ \ComponentInterface{..} -> 
             forM_ ciRestoreComponent $ \restoreComponent -> 
-                restoreComponent value entityID
+                runEntity entityID $ restoreComponent value 
     activateEntity Persistent entityID
 
