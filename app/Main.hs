@@ -14,8 +14,8 @@ main = do
         initSystemPhysics
         initSystemSound
 
-        loadScene "my-scene"
-        saveEntities
+        loadEntities "my-scene"
+        saveEntities "my-scene"
         -- let entityDef = do
         --         cmpColor       ==> (Color "Cheese")
         --         cmpSoundSource ==> (SoundSource 1 2)

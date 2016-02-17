@@ -66,9 +66,8 @@ activateEntity persistence entityID = do
         registerEntity entityID
     deriveComponents entityID
 
-saveEntities :: (MonadState ECS m, MonadIO m) => m ()
-saveEntities = do
-    let sceneFolder = "my-scene"
+saveEntities :: (MonadState ECS m, MonadIO m) => FilePath -> m ()
+saveEntities sceneFolder = do
     entities <- use wldEntities
     componentInterfaces <- Map.toList <$> use wldComponentLibrary
     forM_ entities $ \entityID -> do
@@ -87,14 +86,14 @@ getDirectoryContentsSafe directory = liftIO $ catch (getDirectoryContents direct
         putStrLn ("Error in getDirectoryContentsSafe: " ++ show (e :: IOException))
         return [])
 
-loadScene :: (MonadIO m, MonadState ECS m) => FilePath -> m ()
-loadScene sceneName = do
-    entityFiles <- filter ((== ".yaml") . takeExtension) <$> getDirectoryContentsSafe sceneName
+loadEntities :: (MonadIO m, MonadState ECS m) => FilePath -> m ()
+loadEntities entitiesFolder = do
+    entityFiles <- filter ((== ".yaml") . takeExtension) <$> getDirectoryContentsSafe entitiesFolder
     forM_ entityFiles $ \entityFile -> do
         case readEither (takeBaseName entityFile) of
             Left anError -> liftIO $ putStrLn ("Error getting entityID from filename: " ++ show anError)
-            Right entityID -> liftIO (decodeFileEither (sceneName </> entityFile)) >>= \case
-                Left parseException -> liftIO $ putStrLn ("Error loading " ++ sceneName ++ ": " ++ show parseException)
+            Right entityID -> liftIO (decodeFileEither (entitiesFolder </> entityFile)) >>= \case
+                Left parseException -> liftIO $ putStrLn ("Error loading " ++ (entitiesFolder </> entityFile) ++ ": " ++ show parseException)
                 Right entityValue -> 
                     restoreEntity entityID entityValue
 
