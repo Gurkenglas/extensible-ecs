@@ -115,6 +115,8 @@ getEntityComponent entityID componentKey =
     fmap join $ withComponentMap componentKey $ \componentMap ->
         return $ Map.lookup entityID componentMap
 
+entityHasComponent :: (MonadState s m, HasComponents s) => EntityID -> Key (EntityMap a) -> m Bool
+entityHasComponent entityID componentKey = isJust <$> getEntityComponent entityID componentKey
 
 getComponentJSON :: (MonadReader EntityID m, HasComponents s, MonadState s m, ToJSON a) => Key (EntityMap a) -> m (Maybe Value)
 getComponentJSON componentKey = fmap toJSON <$> getComponent componentKey
