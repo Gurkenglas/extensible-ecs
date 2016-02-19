@@ -46,7 +46,7 @@ initSystemPhysics = do
                 rigidBody <- addRigidBody dynamicsWorld (CollisionObjectID entityID) shape bodyInfo
                 addComponent cmpRigidBody rigidBody
         , ciRemoveComponent  = 
-                withComponent cmpRigidBody $ \rigidBody -> do
+                withComponent_ cmpRigidBody $ \rigidBody -> do
                     removeRigidBody dynamicsWorld rigidBody
                     removeComponent cmpRigidBody
         }

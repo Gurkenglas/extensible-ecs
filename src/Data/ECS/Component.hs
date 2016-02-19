@@ -94,11 +94,19 @@ removeComponent componentKey = removeEntityComponent componentKey =<< ask
 removeEntityComponent :: (HasComponents s, MonadState s m) => Key (EntityMap a) -> EntityID -> m ()
 removeEntityComponent componentKey entityID = modifyComponents componentKey (Map.delete entityID)
 
-withComponent :: (MonadReader EntityID m, HasComponents s, MonadState s m) => Key (EntityMap a) -> (a -> m b) -> m ()
-withComponent componentKey action = mapM_ action =<< getComponent componentKey
+withComponent :: (MonadReader EntityID m, HasComponents s, MonadState s m) => Key (EntityMap a) -> (a -> m b) -> m (Maybe b)
+withComponent componentKey action = do
+    entityID <- ask
+    withEntityComponent entityID componentKey action
 
-withEntityComponent :: (MonadState s m, HasComponents s) => EntityID -> Key (EntityMap a) -> (a -> m b) -> m ()
-withEntityComponent entityID componentKey action = mapM_ action =<< getEntityComponent entityID componentKey
+withComponent_ :: (MonadReader EntityID m, HasComponents s, MonadState s m) => Key (EntityMap a) -> (a -> m b) -> m ()
+withComponent_ componentKey = void . withComponent componentKey
+
+withEntityComponent :: (MonadState s m, HasComponents s) => EntityID -> Key (EntityMap a) -> (a -> m b) -> m (Maybe b)
+withEntityComponent entityID componentKey action = mapM action =<< getEntityComponent entityID componentKey
+
+withEntityComponent_ :: (MonadState s m, HasComponents s) => EntityID -> Key (EntityMap a) -> (a -> m b) -> m ()
+withEntityComponent_ entityID componentKey = void . withEntityComponent entityID componentKey
 
 modifyComponent :: (MonadReader EntityID m, HasComponents s, MonadState s m) => Key (EntityMap a) -> (a -> m a) -> m ()
 modifyComponent componentKey action = do
