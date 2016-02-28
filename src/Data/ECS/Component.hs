@@ -109,10 +109,13 @@ withEntityComponent_ :: (MonadState s m, HasComponents s) => EntityID -> Key (En
 withEntityComponent_ entityID componentKey = void . withEntityComponent entityID componentKey
 
 modifyComponent :: (MonadReader EntityID m, HasComponents s, MonadState s m) => Key (EntityMap a) -> (a -> m a) -> m ()
-modifyComponent componentKey action = do
-    maybeComponent <- getComponent componentKey
+modifyComponent componentKey action = ask >>= \eid -> modifyEntityComponent eid componentKey action
+
+modifyEntityComponent :: (HasComponents s, MonadState s m) => EntityID -> Key (EntityMap a) -> (a -> m a) -> m ()
+modifyEntityComponent entityID componentKey action = do
+    maybeComponent <- getEntityComponent entityID componentKey
     mapM action maybeComponent >>= \case
-        Just newValue -> addComponent componentKey newValue
+        Just newValue -> addEntityComponent componentKey newValue entityID
         Nothing -> return ()
 
 getComponent :: (HasComponents s, MonadState s m, MonadReader EntityID m) => Key (EntityMap a) -> m (Maybe a)
