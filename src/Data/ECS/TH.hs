@@ -2,24 +2,27 @@
 module Data.ECS.TH where
 import Language.Haskell.TH
 import System.IO.Unsafe
-import           Data.Vault.Strict (Key)
-import qualified Data.Vault.Strict as Vault
+--import           Data.Vault.Strict (Key)
+--import qualified Data.Vault.Strict as Vault
 import Data.ECS.Types
+import Data.ECS.Vault
 import Data.List
+import Data.Hashable
 
 {- |
 Generates definitions of the form:
-{-# NOINLINE myKey #-}
 myKey :: Key MyType
-myKey = unsafePerformIO newKey
+myKey = Key 1283671237472
+
+where 1283671237472 is a hash of the string 'myKey'
 -}
 defineKey :: String -> TypeQ -> DecsQ
-defineKey keyString keyType = sequence [inlineDecl, signatureDecl, keyDecl]
+defineKey keyString keyType = sequence [signatureDecl, keyDecl]
     where
         keyName       = mkName keyString
-        inlineDecl    = pragInlD keyName NoInline FunLike AllPhases
         signatureDecl = sigD keyName (conT ''Key `appT` keyType)
-        keyDecl       = valD (varP keyName) (normalB (appE (varE 'unsafePerformIO) (varE 'Vault.newKey))) []
+        keyIntLit     = IntegerL $ fromIntegral $ hash keyString
+        keyDecl       = valD (varP keyName) (normalB (conE 'Key `appE` litE keyIntLit)) []
 
 {- |
 defineSystemKey ''PhysicsSystem
@@ -48,7 +51,7 @@ defineComponentKeyWithType name keyType = defineKey ("cmp" ++ name)  (conT ''Ent
         -- <*> defineKey ("cmp1" ++ name) keyType
 
 {- | 
->>> deleteWord "PhysicsSystem"  
+>>> deleteWord "PhysicsSystem" "System"
 "Physics"
 -}
 deleteWord :: String -> String -> String

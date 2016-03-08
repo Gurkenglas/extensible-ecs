@@ -4,8 +4,8 @@
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE RankNTypes #-}
 module Data.ECS.System where
-import qualified Data.Vault.Strict as Vault
-import Data.Vault.Strict (Key)
+import qualified Data.ECS.Vault as Vault
+import Data.ECS.Vault (Key)
 import Control.Lens
 import Control.Monad.State
 import Data.Maybe

@@ -14,16 +14,21 @@ main = do
         initSystemPhysics
         initSystemSound
 
-        loadEntities "my-scene"
+        liftIO $ print cmpMass
+        liftIO $ print cmpRigidBody
+        liftIO $ print cmpColor
+        liftIO $ print cmpSoundSource
+        --loadEntities "my-scene"
+        let entityDef = do
+                cmpColor       ==> (Color "Cheese")
+                cmpSoundSource ==> (SoundSource 1 2)
+
+
+        spawnEntity Persistent entityDef
+        spawnEntity Persistent entityDef
+        spawnEntity Persistent entityDef
         saveEntities "my-scene"
-        -- let entityDef = do
-        --         cmpColor       ==> (Color "Cheese")
-        --         cmpSoundSource ==> (SoundSource 1 2)
-
-
-        -- -- spawnEntity Persistent entityDef
-        -- -- spawnEntity Persistent entityDef
-        -- -- spawnEntity Persistent entityDef
+        liftIO . print =<< getComponentMap cmpMass
 
         -- -- entityX <- createEntity Persistent
         -- -- _ <- createEntity Persistent

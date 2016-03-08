@@ -6,7 +6,8 @@
 
 module Data.ECS.Types where
 
-import Data.Vault.Strict (Vault)
+import Data.ECS.Vault (Vault)
+
 import Data.Map (Map)
 import GHC.Word
 
