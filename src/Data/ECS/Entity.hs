@@ -3,11 +3,10 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE LambdaCase #-}
 module Data.ECS.Entity where
-import Control.Lens
+import Control.Lens.Extra
 import Control.Monad.State
 import Control.Monad.Reader
-import qualified Data.Map as Map
-import Data.Map (Map)
+import qualified Data.HashMap.Strict as Map
 import System.Random
 import Data.List
 import Data.Yaml

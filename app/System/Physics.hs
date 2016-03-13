@@ -7,7 +7,7 @@ import Control.Monad.State
 import Data.ECS
 import Data.Yaml
 import GHC.Generics
-import Control.Lens
+import Control.Lens.Extra
 import Physics.Bullet
 import Linear.Extra
 import Control.Monad.Reader

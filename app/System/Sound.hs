@@ -5,7 +5,7 @@
 module System.Sound where
 import Control.Monad.State
 import Data.ECS
-import Control.Lens
+import Control.Lens.Extra
 import Data.Yaml
 import GHC.Generics
 

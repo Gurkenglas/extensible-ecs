@@ -21,10 +21,9 @@ library
                        Data.ECS.System
                        Data.ECS.TH
                        Data.ECS.Types
-                       Data.ECS.Debug
                        Data.ECS.Vault
   build-depends:       base >= 4.7 && < 5
-                     , lens
+                     , lens-extra
                      , mtl
                      , containers
                      , random
@@ -33,6 +32,7 @@ library
                      , filepath
                      , directory
                      , hashable
+                     , unordered-containers
   default-language:    Haskell2010
   ghc-options:         -Wall -O2 
 
@@ -45,7 +45,7 @@ executable app
   ghc-options:         -Wall -O2 -threaded -rtsopts -with-rtsopts=-N
   build-depends:       base
                      , extensible-ecs
-                     , lens
+                     , lens-extra
                      , mtl
                      , random
                      , yaml

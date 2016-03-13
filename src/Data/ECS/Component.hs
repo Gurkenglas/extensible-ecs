@@ -3,21 +3,21 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE LambdaCase #-}
-
+{-# LANGUAGE BangPatterns #-}
 module Data.ECS.Component where
 import qualified Data.ECS.Vault as Vault
 import Data.ECS.Vault (Key)
-import Control.Lens
+import Control.Lens.Extra
 import Control.Monad.State
 import Control.Monad.Reader
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import Data.Yaml hiding ((.=))
 import Data.Maybe
 import Data.ECS.Types
 
 infixl 0 ==>
 (==>) :: (MonadState s m, MonadReader EntityID m, HasComponents s) => Key (EntityMap a) -> a -> m ()
-componentKey ==> value = addComponent componentKey value
+componentKey ==> value = setComponent componentKey value
 
 setComponentMap :: (MonadState s m, HasComponents s) => Key a -> a -> m ()
 setComponentMap componentKey value = 
@@ -77,16 +77,16 @@ forEntitiesWithComponent componentKey action =
 
 
 setComponent :: (MonadReader EntityID m, HasComponents s, MonadState s m) => Key (EntityMap a) -> a -> m ()
-setComponent componentKey value = addEntityComponent componentKey value =<< ask
+setComponent componentKey value = setEntityComponent componentKey value =<< ask
 
 addComponent :: (MonadReader EntityID m, HasComponents s, MonadState s m) => Key (EntityMap a) -> a -> m ()
 addComponent = setComponent
 
-addEntityComponent :: (HasComponents s, MonadState s m) => Key (EntityMap a) -> a -> EntityID -> m ()
-addEntityComponent componentKey value entityID = modifyComponents componentKey (Map.insert entityID value)
-
 setEntityComponent :: (HasComponents s, MonadState s m) => Key (EntityMap a) -> a -> EntityID -> m ()
-setEntityComponent = addEntityComponent
+setEntityComponent componentKey !value entityID = modifyComponents componentKey (Map.insert entityID value)
+
+addEntityComponent :: (HasComponents s, MonadState s m) => Key (EntityMap a) -> a -> EntityID -> m ()
+addEntityComponent = setEntityComponent
 
 removeComponent :: (MonadReader EntityID m, HasComponents s, MonadState s m) => Key (EntityMap a) -> m ()
 removeComponent componentKey = removeEntityComponent componentKey =<< ask
@@ -115,7 +115,7 @@ modifyEntityComponent :: (HasComponents s, MonadState s m) => EntityID -> Key (E
 modifyEntityComponent entityID componentKey action = do
     maybeComponent <- getEntityComponent entityID componentKey
     mapM action maybeComponent >>= \case
-        Just newValue -> addEntityComponent componentKey newValue entityID
+        Just newValue -> setEntityComponent componentKey newValue entityID
         Nothing -> return ()
 
 getComponent :: (HasComponents s, MonadState s m, MonadReader EntityID m) => Key (EntityMap a) -> m (Maybe a)

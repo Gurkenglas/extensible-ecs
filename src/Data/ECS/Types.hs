@@ -8,14 +8,16 @@ module Data.ECS.Types where
 
 import Data.ECS.Vault (Vault)
 
-import Data.Map (Map)
+import Data.HashMap.Strict (HashMap)
 import GHC.Word
 
-import Control.Lens
+import Control.Lens.Extra
 import Control.Monad.State
 import Control.Monad.Reader
 
 import Data.Yaml
+
+type Map = HashMap
 
 type EntityID = Word32
 

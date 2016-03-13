@@ -6,7 +6,7 @@
 module Data.ECS.System where
 import qualified Data.ECS.Vault as Vault
 import Data.ECS.Vault (Key)
-import Control.Lens
+import Control.Lens.Extra
 import Control.Monad.State
 import Data.Maybe
 import Data.ECS.Types
