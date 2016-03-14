@@ -57,4 +57,4 @@ initSystemPhysics = do
 tickSystemPhysics :: (MonadState ECS m, MonadIO m) => m ()
 tickSystemPhysics = do
     dynamicsWorld <- viewSystem sysPhysics phyDynamicsWorld
-    stepSimulation dynamicsWorld 90
+    stepSimulationSimple dynamicsWorld (1/60)
