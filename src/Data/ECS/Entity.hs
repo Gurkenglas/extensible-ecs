@@ -89,12 +89,13 @@ loadEntities :: (MonadIO m, MonadState ECS m) => FilePath -> m ()
 loadEntities entitiesFolder = do
     entityFiles <- filter ((== ".yaml") . takeExtension) <$> getDirectoryContentsSafe entitiesFolder
     forM_ entityFiles $ \entityFile -> do
-        case readEither (takeBaseName entityFile) of
-            Left anError -> liftIO $ putStrLn ("Error getting entityID from filename: " ++ show anError)
-            Right entityID -> liftIO (decodeFileEither (entitiesFolder </> entityFile)) >>= \case
-                Left parseException -> liftIO $ putStrLn ("Error loading " ++ (entitiesFolder </> entityFile) ++ ": " ++ show parseException)
-                Right entityValue -> 
-                    restoreEntity entityID entityValue
+        let _entityName = takeBaseName entityFile
+        -- TODO register entity with library here
+        liftIO (decodeFileEither (entitiesFolder </> entityFile)) >>= \case
+            Left parseException -> liftIO $ putStrLn ("Error loading " ++ (entitiesFolder </> entityFile) ++ ": " ++ show parseException)
+            Right entityValue -> do
+                entityID <- newEntity
+                restoreEntity entityID entityValue
 
 restoreEntity :: (MonadIO m, MonadState ECS m) => EntityID -> Map ComponentName Value -> m ()
 restoreEntity entityID entityValue = do
