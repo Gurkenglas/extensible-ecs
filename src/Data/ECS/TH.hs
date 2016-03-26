@@ -1,9 +1,6 @@
 {-# LANGUAGE TemplateHaskell #-}
 module Data.ECS.TH where
 import Language.Haskell.TH
-import System.IO.Unsafe
---import           Data.Vault.Strict (Key)
---import qualified Data.Vault.Strict as Vault
 import Data.ECS.Types
 import Data.ECS.Vault
 import Data.List
@@ -39,16 +36,12 @@ defineSystemKey name = do
 defineComponentKey ''Color
 will create a key defintion of the form:
 cmpColor :: Key (EntityMap Color)
-cmp1Color :: Key Color
 -}
 defineComponentKey :: Name -> DecsQ
 defineComponentKey name = defineComponentKeyWithType (nameBase name) (conT name)
 
 defineComponentKeyWithType :: String -> TypeQ -> DecsQ
 defineComponentKeyWithType name keyType = defineKey ("cmp" ++ name)  (conT ''EntityMap `appT` keyType)
-    -- (++) 
-        -- <$> defineKey ("cmp" ++ name)  (conT ''EntityMap `appT` keyType)
-        -- <*> defineKey ("cmp1" ++ name) keyType
 
 {- | 
 >>> deleteWord "PhysicsSystem" "System"

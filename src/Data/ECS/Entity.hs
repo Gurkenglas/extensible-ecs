@@ -10,7 +10,6 @@ import qualified Data.HashMap.Strict as Map
 import System.Random
 import Data.List
 import Data.Yaml
-import Text.Read
 import System.FilePath
 import System.Directory
 import Data.ECS.Types
@@ -70,14 +69,40 @@ saveEntities sceneFolder = do
     entities <- use wldEntities
     componentInterfaces <- Map.toList <$> use wldComponentLibrary
     forM_ entities $ \entityID -> do
-        yaml <- foldM (\entityMap (componentName, ComponentInterface{..}) -> do
+        yaml <- entityAsJSON' entityID componentInterfaces
+        liftIO $ createDirectoryIfMissing True sceneFolder
+        liftIO $ encodeFile (sceneFolder </> show entityID ++ ".yaml") yaml
+
+entityAsJSON :: (MonadIO m, MonadState ECS m) => EntityID -> m (Map ComponentName Value)
+entityAsJSON entityID = do
+    componentInterfaces <- Map.toList <$> use wldComponentLibrary
+    entityAsJSON' entityID componentInterfaces
+
+-- FIXME: a faster version of this could skip the serialization/deserialization
+-- by simply copying values over for any component that had a ciExtractComponent
+-- entry and then calling activateEntity
+duplicateEntity :: (MonadIO m, MonadState ECS m) => Persistence -> EntityID -> m EntityID
+duplicateEntity persistence entityID = do
+    entityValues <- entityAsJSON entityID
+    spawnEntityFromJSON persistence entityValues
+
+-- | An internal version that lets us call Map.toList 
+-- once on the wldComponentLibrary
+-- and reuse it for multiple entityAsJSON' calls
+entityAsJSON' :: (MonadIO m, MonadState ECS m) 
+              => EntityID 
+              -> [(ComponentName, ComponentInterface)] 
+              -> m (Map ComponentName Value)
+entityAsJSON' entityID componentInterfaces = 
+    foldM (\entityMap (componentName, ComponentInterface{..}) -> do
             mValue <- join <$> forM ciExtractComponent (runEntity entityID)
             return $ case mValue of
                 Just value -> Map.insert componentName value entityMap
-                Nothing -> entityMap
-            ) mempty componentInterfaces
-        liftIO $ createDirectoryIfMissing True sceneFolder
-        liftIO $ encodeFile (sceneFolder </> show entityID ++ ".yaml") yaml
+                Nothing    -> entityMap
+            ) 
+        mempty componentInterfaces
+
+
 
 getDirectoryContentsSafe :: MonadIO m => FilePath -> m [FilePath]
 getDirectoryContentsSafe directory = liftIO $ catch (getDirectoryContents directory)
@@ -92,17 +117,27 @@ loadEntities entitiesFolder = do
         let _entityName = takeBaseName entityFile
         -- TODO register entity with library here
         liftIO (decodeFileEither (entitiesFolder </> entityFile)) >>= \case
-            Left parseException -> liftIO $ putStrLn ("Error loading " ++ (entitiesFolder </> entityFile) ++ ": " ++ show parseException)
-            Right entityValue -> do
-                entityID <- newEntity
-                restoreEntity entityID entityValue
+            
+            Right entityValues  -> 
+                void $ spawnEntityFromJSON Persistent entityValues
+            
+            Left parseException -> 
+                liftIO $ putStrLn ("Error loading " ++ (entitiesFolder </> entityFile) 
+                                    ++ ": " ++ show parseException)
 
-restoreEntity :: (MonadIO m, MonadState ECS m) => EntityID -> Map ComponentName Value -> m ()
-restoreEntity entityID entityValue = do
+spawnEntityFromJSON :: (MonadIO m, MonadState ECS m) => Persistence -> Map ComponentName Value -> m EntityID
+spawnEntityFromJSON persistence entityValues = do
+    entityID <- newEntity
+    restoreEntityFromValues persistence entityID entityValues
+    return entityID
+
+restoreEntityFromValues :: (MonadIO m, MonadState ECS m) => Persistence -> EntityID -> Map ComponentName Value -> m ()
+restoreEntityFromValues persistence entityID entityValues = do
     componentInterfaces <- use wldComponentLibrary
-    forM_ (Map.toList entityValue) $ \(componentName, value) -> 
+    
+    forM_ (Map.toList entityValues) $ \(componentName, value) -> 
         forM_ (Map.lookup componentName componentInterfaces) $ \ComponentInterface{..} -> 
             forM_ ciRestoreComponent $ \restoreComponent -> 
-                runEntity entityID $ restoreComponent value 
-    activateEntity Persistent entityID
+                runEntity entityID $ restoreComponent value
 
+    activateEntity persistence entityID

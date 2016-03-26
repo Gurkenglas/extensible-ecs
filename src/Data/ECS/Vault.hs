@@ -7,8 +7,8 @@ import qualified Data.HashMap.Strict as Map
 import Data.HashMap.Strict (HashMap)
 import GHC.Exts
 import Unsafe.Coerce
-import Data.Hashable
-import Control.Lens.Extra
+--import Data.Hashable
+--import Control.Lens.Extra
 
 -- | An embedding of the 'vault' package with the Key type based simply on Ints,
 -- such that we can create them at compile-time based on a hash of a given name.
@@ -41,5 +41,5 @@ adjust :: (a -> a) -> Key a -> Vault -> Vault
 adjust f (Key k) (Vault m) = Vault $ Map.adjust f' k m 
      where f' = toAny . f . fromAny 
 
-
+delete :: Key a -> Vault -> Vault
 delete (Key k) (Vault m) = Vault $ Map.delete k m

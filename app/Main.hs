@@ -24,11 +24,15 @@ main = do
                 cmpSoundSource ==> (SoundSource 1 2)
 
 
-        spawnEntity Persistent entityDef
-        spawnEntity Persistent entityDef
-        spawnEntity Persistent entityDef
+        prototypeEntityID <- spawnEntity Persistent entityDef
+        dupeEntityID <- duplicateEntity Persistent prototypeEntityID
+
+        _ <- spawnEntity Persistent entityDef
+        _ <- spawnEntity Persistent entityDef
+        
+        liftIO . print =<< entityAsJSON dupeEntityID
+        
         saveEntities "my-scene"
-        liftIO . print =<< getComponentMap cmpMass
 
         -- -- entityX <- createEntity Persistent
         -- -- _ <- createEntity Persistent
