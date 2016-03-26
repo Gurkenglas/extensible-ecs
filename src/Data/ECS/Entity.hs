@@ -24,24 +24,9 @@ newEntity = liftIO randomIO
 spawnEntity :: (MonadState ECS m, MonadIO m) => Persistence -> ReaderT EntityID m () -> m EntityID
 spawnEntity persistence entityDef = do
     entityID <- newEntity
-    addDefaultComponents entityID
     runReaderT entityDef entityID
     activateEntity persistence entityID
     return entityID
-
-createEntity :: (MonadState ECS m, MonadIO m) => Persistence -> m EntityID
-createEntity persistence = do
-    entityID <- newEntity
-
-    addDefaultComponents entityID
-
-    activateEntity persistence entityID
-
-    return entityID
-
-addDefaultComponents :: (MonadIO m, MonadState ECS m) => EntityID -> m ()
-addDefaultComponents entityID = 
-    use wldComponentLibrary >>= mapM_ (\ComponentInterface{..} -> forM_ ciAddComponent (runEntity entityID))
 
 registerEntity :: MonadState ECS m => EntityID -> m ()
 registerEntity entityID = wldEntities %= (entityID:)
@@ -54,7 +39,9 @@ removeEntity entityID = do
 
 deriveComponents :: (MonadIO m, MonadState ECS m) => EntityID -> m ()
 deriveComponents entityID = 
-    use wldComponentLibrary >>= mapM_ (\ComponentInterface{..} -> forM_ ciDeriveComponent (runEntity entityID))
+    use wldComponentLibrary >>= mapM_ 
+        (\ComponentInterface{..} -> 
+            forM_ ciDeriveComponent (runEntity entityID))
 
 -- | Registers an entity in the list of all entities, and
 -- converts inert properties into live ones

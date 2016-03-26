@@ -38,8 +38,7 @@ registerComponent name componentKey componentInterface = do
 
 newComponentInterface :: Key (EntityMap a) -> ComponentInterface
 newComponentInterface componentKey = ComponentInterface 
-    { ciAddComponent     = Nothing
-    , ciRemoveComponent  = removeComponent componentKey
+    { ciRemoveComponent  = removeComponent componentKey
     , ciExtractComponent = Nothing
     , ciRestoreComponent = Nothing
     , ciDeriveComponent  = Nothing
@@ -49,12 +48,6 @@ savedComponentInterface :: (ToJSON a, FromJSON a) => Key (EntityMap a) -> Compon
 savedComponentInterface componentKey = (newComponentInterface componentKey)
     { ciExtractComponent = Just (getComponentJSON componentKey)
     , ciRestoreComponent = Just (setComponentJSON componentKey)
-    }
-
--- | As in, this component should be added to new entites by default
-defaultComponentInterface :: (ToJSON a, FromJSON a) => Key (EntityMap a) -> a -> ComponentInterface
-defaultComponentInterface componentKey defaultValue = (savedComponentInterface componentKey)
-    { ciAddComponent = Just (addComponent componentKey defaultValue) 
     }
 
 withComponentMap_ :: (HasComponents s, MonadState s m) => Key (EntityMap a) -> ((EntityMap a) -> m b) -> m ()
@@ -79,14 +72,9 @@ forEntitiesWithComponent componentKey action =
 setComponent :: (MonadReader EntityID m, HasComponents s, MonadState s m) => Key (EntityMap a) -> a -> m ()
 setComponent componentKey value = setEntityComponent componentKey value =<< ask
 
-addComponent :: (MonadReader EntityID m, HasComponents s, MonadState s m) => Key (EntityMap a) -> a -> m ()
-addComponent = setComponent
 
 setEntityComponent :: (HasComponents s, MonadState s m) => Key (EntityMap a) -> a -> EntityID -> m ()
 setEntityComponent componentKey !value entityID = modifyComponents componentKey (Map.insert entityID value)
-
-addEntityComponent :: (HasComponents s, MonadState s m) => Key (EntityMap a) -> a -> EntityID -> m ()
-addEntityComponent = setEntityComponent
 
 removeComponent :: (MonadReader EntityID m, HasComponents s, MonadState s m) => Key (EntityMap a) -> m ()
 removeComponent componentKey = removeEntityComponent componentKey =<< ask

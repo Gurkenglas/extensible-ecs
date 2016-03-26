@@ -46,8 +46,7 @@ newECS :: ECS
 newECS = ECS mempty mempty mempty mempty mempty
 
 data ComponentInterface = ComponentInterface
-    { ciAddComponent     :: forall m. (MonadReader EntityID m, MonadState ECS m, MonadIO m) => Maybe (m ())
-    , ciRemoveComponent  :: forall m. (MonadReader EntityID m, MonadState ECS m, MonadIO m) => (m ())
+    { ciRemoveComponent  :: forall m. (MonadReader EntityID m, MonadState ECS m, MonadIO m) => (m ())
     , ciExtractComponent :: forall m. (MonadReader EntityID m, MonadState ECS m, MonadIO m) => Maybe (m (Maybe Value))
     , ciRestoreComponent :: forall m. (MonadReader EntityID m, MonadState ECS m, MonadIO m) => Maybe (Value -> m ())
     , ciDeriveComponent  :: forall m. (MonadReader EntityID m, MonadState ECS m, MonadIO m) => Maybe (m ())
