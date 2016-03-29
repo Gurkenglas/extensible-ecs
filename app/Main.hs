@@ -20,8 +20,9 @@ main = do
         liftIO $ print cmpSoundSource
         --loadEntities "my-scene"
         let entityDef = do
-                cmpColor       ==> (Color "Cheese")
-                cmpSoundSource ==> (SoundSource 1 2)
+                cmpShapeType   ==> CubeShape
+                cmpColor       ==> Color "Cheese"
+                cmpSoundSource ==> SoundSource 1 2
 
 
         prototypeEntityID <- spawnEntity Persistent entityDef
@@ -34,9 +35,6 @@ main = do
         
         saveEntities "my-scene"
 
-        -- -- entityX <- createEntity Persistent
-        -- -- _ <- createEntity Persistent
-        -- -- _ <- createEntity Persistent
         -- -- replicateM_ 10 $ do
         -- --     tickSystemColor
         -- --     tickSystemPhysics
@@ -46,7 +44,7 @@ main = do
         -- -- saveEntities
 
         -- -- liftIO (putStrLn "Entities after remove:")
-        -- -- removeEntity entityX
+        -- -- removeEntity dupeEntityID
         
         -- -- saveEntities
 

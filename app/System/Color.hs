@@ -4,6 +4,7 @@
 {-# LANGUAGE TemplateHaskell #-}
 module System.Color where
 import Control.Monad.State
+import Control.Monad.Reader
 import Data.ECS
 import System.Random
 import Data.Yaml
@@ -22,18 +23,14 @@ initSystemColor = do
     
     registerSystem sysColor (ColorSystem ["red", "blue", "green"])
 
-    registerComponent "Color" cmpColor $ ComponentInterface 
-        { ciAddComponent     = Just $ withSystem_ sysColor $ \(ColorSystem options) -> do
-                randomColorIdx <- liftIO (randomRIO (0, length options - 1))
-                let chosenColor = options !! randomColorIdx
-                addComponent cmpColor (Color chosenColor)
+    registerComponent "Color" cmpColor $ savedComponentInterface cmpColor
 
-        , ciExtractComponent = Just (getComponentJSON cmpColor)
-        , ciRestoreComponent = Just (setComponentJSON cmpColor)
-        , ciDeriveComponent  = Nothing
-        , ciRemoveComponent  = removeComponent cmpColor
-        }
-
+addRandomColor :: (MonadIO m, MonadState ECS m, MonadReader EntityID m) => m ()
+addRandomColor = do
+    ColorSystem options <- viewSystem sysColor id
+    randomColorIdx <- liftIO (randomRIO (0, length options - 1))
+    let chosenColor = options !! randomColorIdx
+    cmpColor ==> Color chosenColor
 
 tickSystemColor :: (MonadState ECS m, MonadIO m) => m ()
 tickSystemColor = do
