@@ -113,17 +113,19 @@ getDirectoryContentsSafe directory = liftIO $ catch (getDirectoryContents direct
 loadEntities :: (MonadIO m, MonadState ECS m) => FilePath -> m ()
 loadEntities entitiesFolder = do
     entityFiles <- filter ((== ".yaml") . takeExtension) <$> getDirectoryContentsSafe entitiesFolder
-    forM_ entityFiles $ \entityFile -> do
-        let _entityName = takeBaseName entityFile
-        -- TODO register entity with library here
+    forM_ entityFiles $ \entityFile -> 
+        
         liftIO (decodeFileEither (entitiesFolder </> entityFile)) >>= \case
             
-            Right entityValues  -> 
+            Right entityValues  -> do
+                let _entityName = takeBaseName entityFile
+                -- TODO register entity with library here
+
                 void $ spawnEntityFromJSON Persistent entityValues
             
             Left parseException -> 
                 liftIO $ putStrLn ("Error loading " ++ (entitiesFolder </> entityFile) 
-                                    ++ ": " ++ show parseException)
+                                                    ++ ": " ++ show parseException)
 
 spawnEntityFromJSON :: (MonadIO m, MonadState ECS m) => Persistence -> Map ComponentName Value -> m EntityID
 spawnEntityFromJSON persistence entityValues = do
