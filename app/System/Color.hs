@@ -23,18 +23,18 @@ initSystemColor = do
     
     registerSystem sysColor (ColorSystem ["red", "blue", "green"])
 
-    registerComponent "Color" cmpColor $ savedComponentInterface cmpColor
+    registerComponent "Color" myColor $ savedComponentInterface myColor
 
 addRandomColor :: (MonadIO m, MonadState ECS m, MonadReader EntityID m) => m ()
 addRandomColor = do
     ColorSystem options <- viewSystem sysColor id
     randomColorIdx <- liftIO (randomRIO (0, length options - 1))
     let chosenColor = options !! randomColorIdx
-    cmpColor ==> Color chosenColor
+    myColor ==> Color chosenColor
 
 tickSystemColor :: (MonadState ECS m, MonadIO m) => m ()
 tickSystemColor = do
-    forEntitiesWithComponent cmpColor $ \(entityID, color) ->
+    forEntitiesWithComponent myColor $ \(entityID, color) ->
         liftIO (print (entityID, color))
     return ()
 

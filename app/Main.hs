@@ -14,15 +14,15 @@ main = do
         initSystemPhysics
         initSystemSound
 
-        liftIO $ print cmpMass
-        liftIO $ print cmpRigidBody
-        liftIO $ print cmpColor
-        liftIO $ print cmpSoundSource
+        liftIO $ print myMass
+        liftIO $ print myRigidBody
+        liftIO $ print myColor
+        liftIO $ print mySoundSource
         --loadEntities "my-scene"
         let entityDef = do
-                cmpShapeType   ==> CubeShape
-                cmpColor       ==> Color "Cheese"
-                cmpSoundSource ==> SoundSource 1 2
+                myShapeType   ==> CubeShape
+                myColor       ==> Color "Cheese"
+                mySoundSource ==> SoundSource 1 2
 
 
         prototypeEntityID <- spawnEntity Persistent entityDef

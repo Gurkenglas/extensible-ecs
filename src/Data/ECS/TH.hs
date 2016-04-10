@@ -35,13 +35,13 @@ defineSystemKey name = do
 {- |
 defineComponentKey ''Color
 will create a key defintion of the form:
-cmpColor :: Key (EntityMap Color)
+myColor :: Key (EntityMap Color)
 -}
 defineComponentKey :: Name -> DecsQ
 defineComponentKey name = defineComponentKeyWithType (nameBase name) (conT name)
 
 defineComponentKeyWithType :: String -> TypeQ -> DecsQ
-defineComponentKeyWithType name keyType = defineKey ("cmp" ++ name)  (conT ''EntityMap `appT` keyType)
+defineComponentKeyWithType name keyType = defineKey ("my" ++ name)  (conT ''EntityMap `appT` keyType)
 
 {- | 
 >>> deleteWord "PhysicsSystem" "System"

@@ -31,25 +31,25 @@ initSystemPhysics = do
     dynamicsWorld <- createDynamicsWorld mempty
     registerSystem sysPhysics (PhysicsSystem dynamicsWorld)
 
-    registerComponent "RigidBody" cmpRigidBody $ (newComponentInterface cmpRigidBody) 
+    registerComponent "RigidBody" myRigidBody $ (newComponentInterface myRigidBody) 
         { ciDeriveComponent = Just $ do
             let bodyInfo = mempty
-            mShapeType <- getComponent cmpShapeType
+            mShapeType <- getComponent myShapeType
             forM_ mShapeType $ \shapeType -> do
                 shape     <- case shapeType of 
                     CubeShape -> createBoxShape (1 :: V3 Float)
                     SphereShape -> createSphereShape (1 :: Float)
                 entityID <- ask
                 rigidBody <- addRigidBody dynamicsWorld (CollisionObjectID entityID) shape bodyInfo
-                setComponent cmpRigidBody rigidBody
+                setComponent myRigidBody rigidBody
         , ciRemoveComponent  = 
-                withComponent_ cmpRigidBody $ \rigidBody -> do
+                withComponent_ myRigidBody $ \rigidBody -> do
                     removeRigidBody dynamicsWorld rigidBody
-                    removeComponent cmpRigidBody
+                    removeComponent myRigidBody
         }
-    registerComponent "Mass"        cmpMass        (savedComponentInterface cmpMass)
-    registerComponent "Restitution" cmpRestitution (savedComponentInterface cmpRestitution)
-    registerComponent "ShapeType"   cmpShapeType   (savedComponentInterface cmpShapeType)
+    registerComponent "Mass"        myMass        (savedComponentInterface myMass)
+    registerComponent "Restitution" myRestitution (savedComponentInterface myRestitution)
+    registerComponent "ShapeType"   myShapeType   (savedComponentInterface myShapeType)
 
 tickSystemPhysics :: (MonadState ECS m, MonadIO m) => m ()
 tickSystemPhysics = do
