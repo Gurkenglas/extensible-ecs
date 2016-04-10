@@ -21,8 +21,17 @@ data Persistence = Transient | Persistent deriving (Eq, Show)
 newEntity :: MonadIO m => m EntityID
 newEntity = liftIO randomIO
 
-spawnEntity :: (MonadState ECS m, MonadIO m) => Persistence -> ReaderT EntityID m () -> m EntityID
-spawnEntity persistence entityDef = do
+spawnEntity :: (MonadState ECS m, MonadIO m) => ReaderT EntityID m () -> m EntityID
+spawnEntity = spawnTransientEntity
+
+spawnPersistentEntity :: (MonadState ECS m, MonadIO m) => ReaderT EntityID m () -> m EntityID
+spawnPersistentEntity = spawnEntityWithPersistence Persistent  
+
+spawnTransientEntity :: (MonadState ECS m, MonadIO m) => ReaderT EntityID m () -> m EntityID
+spawnTransientEntity = spawnEntityWithPersistence Transient 
+
+spawnEntityWithPersistence :: (MonadState ECS m, MonadIO m) => Persistence -> ReaderT EntityID m () -> m EntityID
+spawnEntityWithPersistence persistence entityDef = do
     entityID <- newEntity
     runReaderT entityDef entityID
     activateEntity persistence entityID

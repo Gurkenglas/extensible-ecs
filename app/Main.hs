@@ -25,11 +25,11 @@ main = do
                 mySoundSource ==> SoundSource 1 2
 
 
-        prototypeEntityID <- spawnEntity Persistent entityDef
+        prototypeEntityID <- spawnPersistentEntity entityDef
         dupeEntityID <- duplicateEntity Persistent prototypeEntityID
 
-        _ <- spawnEntity Persistent entityDef
-        _ <- spawnEntity Persistent entityDef
+        _ <- spawnPersistentEntity entityDef
+        _ <- spawnPersistentEntity entityDef
         
         liftIO . print =<< entityAsJSON dupeEntityID
         
