@@ -17,7 +17,15 @@ import Data.ECS.Types
 
 infixl 0 ==>
 (==>) :: (MonadState s m, MonadReader EntityID m, HasComponents s) => Key (EntityMap a) -> a -> m ()
-componentKey ==> value = setComponent componentKey value
+(==>) = setComponent
+
+infixl 0 ==%
+(==%) :: (MonadReader EntityID m, HasComponents s, MonadState s m) => Key (EntityMap a) -> (a -> a) -> m ()
+(==%) = modifyComponent
+
+infixl 0 ==%~
+(==%~) :: (MonadReader EntityID m, HasComponents s, MonadState s m) => Key (EntityMap a) -> (a -> m a) -> m ()
+(==%~) = modifyComponentM
 
 setComponentMap :: (MonadState s m, HasComponents s) => Key a -> a -> m ()
 setComponentMap componentKey value = 
@@ -96,11 +104,17 @@ withEntityComponent entityID componentKey action = mapM action =<< getEntityComp
 withEntityComponent_ :: (MonadState s m, HasComponents s) => EntityID -> Key (EntityMap a) -> (a -> m b) -> m ()
 withEntityComponent_ entityID componentKey = void . withEntityComponent entityID componentKey
 
-modifyComponent :: (MonadReader EntityID m, HasComponents s, MonadState s m) => Key (EntityMap a) -> (a -> m a) -> m ()
-modifyComponent componentKey action = ask >>= \eid -> modifyEntityComponent eid componentKey action
+modifyComponent :: (MonadReader EntityID m, HasComponents s, MonadState s m) => Key (EntityMap a) -> (a -> a) -> m ()
+modifyComponent componentKey action = modifyComponentM componentKey (return . action)
 
-modifyEntityComponent :: (HasComponents s, MonadState s m) => EntityID -> Key (EntityMap a) -> (a -> m a) -> m ()
-modifyEntityComponent entityID componentKey action = do
+modifyEntityComponent :: (HasComponents s, MonadState s m) => EntityID -> Key (EntityMap a) -> (a -> a) -> m ()
+modifyEntityComponent entityID componentKey action = modifyEntityComponentM entityID componentKey (return . action)
+
+modifyComponentM :: (MonadReader EntityID m, HasComponents s, MonadState s m) => Key (EntityMap a) -> (a -> m a) -> m ()
+modifyComponentM componentKey action = ask >>= \eid -> modifyEntityComponentM eid componentKey action
+
+modifyEntityComponentM :: (HasComponents s, MonadState s m) => EntityID -> Key (EntityMap a) -> (a -> m a) -> m ()
+modifyEntityComponentM entityID componentKey action = do
     maybeComponent <- getEntityComponent entityID componentKey
     mapM action maybeComponent >>= \case
         Just newValue -> setEntityComponent componentKey newValue entityID
