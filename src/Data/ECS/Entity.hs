@@ -25,10 +25,10 @@ spawnEntity :: (MonadState ECS m, MonadIO m) => ReaderT EntityID m () -> m Entit
 spawnEntity = spawnTransientEntity
 
 spawnPersistentEntity :: (MonadState ECS m, MonadIO m) => ReaderT EntityID m () -> m EntityID
-spawnPersistentEntity = spawnEntityWithPersistence Persistent  
+spawnPersistentEntity = spawnEntityWithPersistence Persistent
 
 spawnTransientEntity :: (MonadState ECS m, MonadIO m) => ReaderT EntityID m () -> m EntityID
-spawnTransientEntity = spawnEntityWithPersistence Transient 
+spawnTransientEntity = spawnEntityWithPersistence Transient
 
 spawnEntityWithPersistence :: (MonadState ECS m, MonadIO m) => Persistence -> ReaderT EntityID m () -> m EntityID
 spawnEntityWithPersistence persistence entityDef = do
@@ -47,9 +47,9 @@ removeEntity entityID = do
     wldEntities %= delete entityID
 
 deriveComponents :: (MonadIO m, MonadState ECS m) => EntityID -> m ()
-deriveComponents entityID = 
-    use wldComponentLibrary >>= mapM_ 
-        (\ComponentInterface{..} -> 
+deriveComponents entityID =
+    use wldComponentLibrary >>= mapM_
+        (\ComponentInterface{..} ->
             forM_ ciDeriveComponent (runEntity entityID))
 
 -- | Registers an entity in the list of all entities, and
@@ -82,20 +82,20 @@ duplicateEntity persistence entityID = do
     entityValues <- entityAsJSON entityID
     spawnEntityFromJSON persistence entityValues
 
--- | An internal version that lets us call Map.toList 
+-- | An internal version that lets us call Map.toList
 -- once on the wldComponentLibrary
 -- and reuse it for multiple entityAsJSON' calls
-entityAsJSON' :: (MonadIO m, MonadState ECS m) 
-              => EntityID 
-              -> [(ComponentName, ComponentInterface)] 
+entityAsJSON' :: (MonadIO m, MonadState ECS m)
+              => EntityID
+              -> [(ComponentName, ComponentInterface)]
               -> m (Map ComponentName Value)
-entityAsJSON' entityID componentInterfaces = 
+entityAsJSON' entityID componentInterfaces =
     foldM (\entityMap (componentName, ComponentInterface{..}) -> do
             mValue <- join <$> forM ciExtractComponent (runEntity entityID)
             return $ case mValue of
                 Just value -> Map.insert componentName value entityMap
                 Nothing    -> entityMap
-            ) 
+            )
         mempty componentInterfaces
 
 
@@ -109,18 +109,18 @@ getDirectoryContentsSafe directory = liftIO $ catch (getDirectoryContents direct
 loadEntities :: (MonadIO m, MonadState ECS m) => FilePath -> m ()
 loadEntities entitiesFolder = do
     entityFiles <- filter ((== ".yaml") . takeExtension) <$> getDirectoryContentsSafe entitiesFolder
-    forM_ entityFiles $ \entityFile -> 
-        
+    forM_ entityFiles $ \entityFile ->
+
         liftIO (decodeFileEither (entitiesFolder </> entityFile)) >>= \case
-            
+
             Right entityValues  -> do
                 let _entityName = takeBaseName entityFile
                 -- TODO register entity with library here
 
                 void $ spawnEntityFromJSON Persistent entityValues
-            
-            Left parseException -> 
-                liftIO $ putStrLn ("Error loading " ++ (entitiesFolder </> entityFile) 
+
+            Left parseException ->
+                liftIO $ putStrLn ("Error loading " ++ (entitiesFolder </> entityFile)
                                                     ++ ": " ++ show parseException)
 
 spawnEntityFromJSON :: (MonadIO m, MonadState ECS m) => Persistence -> Map ComponentName Value -> m EntityID
@@ -132,10 +132,11 @@ spawnEntityFromJSON persistence entityValues = do
 restoreEntityFromValues :: (MonadIO m, MonadState ECS m) => Persistence -> EntityID -> Map ComponentName Value -> m ()
 restoreEntityFromValues persistence entityID entityValues = do
     componentInterfaces <- use wldComponentLibrary
-    
-    forM_ (Map.toList entityValues) $ \(componentName, value) -> 
-        forM_ (Map.lookup componentName componentInterfaces) $ \ComponentInterface{..} -> 
-            forM_ ciRestoreComponent $ \restoreComponent -> 
-                runEntity entityID $ restoreComponent value
+
+    runEntity entityID $
+        forM_ (Map.toList entityValues) $ \(componentName, value) -> do
+            forM_ (Map.lookup componentName componentInterfaces) $ \ComponentInterface{..} ->
+                forM_ ciRestoreComponent $ \restoreComponent ->
+                    restoreComponent value
 
     activateEntity persistence entityID
