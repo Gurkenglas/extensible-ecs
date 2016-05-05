@@ -13,6 +13,7 @@ import Control.Monad.Reader
 import qualified Data.HashMap.Strict as Map
 import Data.Yaml hiding ((.=))
 import Data.Maybe
+import Data.Monoid
 import Data.ECS.Types
 
 infixl 0 ==>
@@ -28,7 +29,7 @@ infixl 0 ==%~
 (==%~) = modifyComponentM
 
 setComponentMap :: (MonadState s m, HasComponents s) => Key a -> a -> m ()
-setComponentMap componentKey value = 
+setComponentMap componentKey value =
     components . unComponents %= Vault.insert componentKey value
 
 lookupComponentMap :: (MonadState s m, HasComponents s) => Key a -> m (Maybe a)
@@ -36,7 +37,7 @@ lookupComponentMap componentKey = do
     Vault.lookup componentKey <$> use (components . unComponents)
 
 modifyComponents :: (MonadState s m, HasComponents s) => Key a -> (a -> a) -> m ()
-modifyComponents componentKey action = 
+modifyComponents componentKey action =
     components . unComponents %= Vault.adjust action componentKey
 
 registerComponent :: MonadState ECS m => String -> Key (EntityMap a) -> ComponentInterface -> m ()
@@ -45,7 +46,7 @@ registerComponent name componentKey componentInterface = do
     wldComponentLibrary . at name ?= componentInterface
 
 newComponentInterface :: Key (EntityMap a) -> ComponentInterface
-newComponentInterface componentKey = ComponentInterface 
+newComponentInterface componentKey = ComponentInterface
     { ciRemoveComponent  = removeComponent componentKey
     , ciExtractComponent = Nothing
     , ciRestoreComponent = Nothing
@@ -72,8 +73,8 @@ getComponentMap componentKey = fromMaybe getComponentMapError <$> lookupComponen
 
 -- | Perform an action on each entityID/component pair
 forEntitiesWithComponent :: MonadState ECS m => Key (EntityMap a) -> ((EntityID, a) -> m b) -> m ()
-forEntitiesWithComponent componentKey action = 
-    withComponentMap_ componentKey $ \componentMap -> 
+forEntitiesWithComponent componentKey action =
+    withComponentMap_ componentKey $ \componentMap ->
         forM_ (Map.toList componentMap) action
 
 
@@ -124,7 +125,7 @@ getComponent :: (HasComponents s, MonadState s m, MonadReader EntityID m) => Key
 getComponent componentKey = ask >>= \eid -> getEntityComponent eid componentKey
 
 getEntityComponent :: (HasComponents s, MonadState s m) => EntityID -> Key (EntityMap a) -> m (Maybe a)
-getEntityComponent entityID componentKey = 
+getEntityComponent entityID componentKey =
     fmap join $ withComponentMap componentKey $ \componentMap ->
         return $ Map.lookup entityID componentMap
 
@@ -140,3 +141,25 @@ setComponentJSON componentKey jsonValue = case flip parseEither jsonValue parseJ
     Left anError -> liftIO $ putStrLn ("setComponentJSON error: " ++ show anError)
 
 
+appendEntityComponent :: (Monoid a, MonadState s m, HasComponents s)
+                      => EntityID -> Key (EntityMap a) -> a -> m ()
+appendEntityComponent entityID key value = runEntity entityID (appendComponent key value)
+
+prependEntityComponent :: (Monoid a, MonadState s m, HasComponents s)
+                       => EntityID -> Key (EntityMap a) -> a -> m ()
+prependEntityComponent entityID key value = runEntity entityID (prependComponent key value)
+
+prependComponent :: (Monoid a, MonadState s m, MonadReader EntityID m, HasComponents s)
+                 => Key (EntityMap a) -> a -> m ()
+prependComponent key value =
+    getComponent key >>= \case
+        Nothing -> key ==> value
+        Just _ ->  key ==% (value <>)
+
+
+appendComponent :: (Monoid a, MonadState s m, MonadReader EntityID m, HasComponents s)
+                => Key (EntityMap a) -> a -> m ()
+appendComponent key value =
+    getComponent key >>= \case
+        Nothing -> key ==> value
+        Just _ ->  key ==% (<> value)
