@@ -30,15 +30,18 @@ spawnPersistentEntity = spawnEntityWithPersistence Persistent
 spawnTransientEntity :: (MonadState ECS m, MonadIO m) => ReaderT EntityID m () -> m EntityID
 spawnTransientEntity = spawnEntityWithPersistence Transient
 
-spawnEntityWithPersistence :: (MonadState ECS m, MonadIO m) => Persistence -> ReaderT EntityID m () -> m EntityID
+spawnEntityWithPersistence :: (MonadState ECS m, MonadIO m)
+                           => Persistence
+                           -> ReaderT EntityID m ()
+                           -> m EntityID
 spawnEntityWithPersistence persistence entityDef = do
     entityID <- newEntity
     runReaderT entityDef entityID
     activateEntity persistence entityID
     return entityID
 
-registerEntity :: MonadState ECS m => EntityID -> m ()
-registerEntity entityID = wldEntities %= (entityID:)
+makeEntityPersistent :: MonadState ECS m => EntityID -> m ()
+makeEntityPersistent entityID = wldEntities %= (entityID:)
 
 removeEntity :: (MonadState ECS m, MonadIO m) => EntityID -> m ()
 removeEntity entityID = do
@@ -57,17 +60,8 @@ deriveComponents entityID =
 activateEntity :: (MonadIO m, MonadState ECS m) => Persistence -> EntityID -> m ()
 activateEntity persistence entityID = do
     when (persistence == Persistent) $ do
-        registerEntity entityID
+        makeEntityPersistent entityID
     deriveComponents entityID
-
-saveEntities :: (MonadState ECS m, MonadIO m) => FilePath -> m ()
-saveEntities sceneFolder = do
-    entities <- use wldEntities
-    componentInterfaces <- Map.toList <$> use wldComponentLibrary
-    forM_ entities $ \entityID -> do
-        yaml <- entityAsJSON' entityID componentInterfaces
-        liftIO $ createDirectoryIfMissing True sceneFolder
-        liftIO $ encodeFile (sceneFolder </> show entityID ++ ".yaml") yaml
 
 entityAsJSON :: (MonadIO m, MonadState ECS m) => EntityID -> m (Map ComponentName Value)
 entityAsJSON entityID = do
@@ -75,7 +69,8 @@ entityAsJSON entityID = do
     entityAsJSON' entityID componentInterfaces
 
 -- FIXME: a faster version of this could skip the serialization/deserialization
--- by simply copying values over for any component that had a ciExtractComponent
+-- by simply copying values over via a ciCloneComponent function
+-- (cloneComponent someKey toEntityID = setEntityComponent entityID =<< getComponent someKey)
 -- entry and then calling activateEntity
 duplicateEntity :: (MonadIO m, MonadState ECS m) => Persistence -> EntityID -> m EntityID
 duplicateEntity persistence entityID = do
@@ -106,9 +101,12 @@ getDirectoryContentsSafe directory = liftIO $ catch (getDirectoryContents direct
         putStrLn ("Error in getDirectoryContentsSafe: " ++ show (e :: IOException))
         return [])
 
+getDirectoryContentsWithExtension extension folder =
+    filter ((== ('.':extension)) . takeExtension) <$> getDirectoryContentsSafe folder
+
 loadEntities :: (MonadIO m, MonadState ECS m) => FilePath -> m ()
 loadEntities entitiesFolder = do
-    entityFiles <- filter ((== ".yaml") . takeExtension) <$> getDirectoryContentsSafe entitiesFolder
+    entityFiles <- getDirectoryContentsWithExtension "yaml" entitiesFolder
     forM_ entityFiles $ \entityFile ->
 
         liftIO (decodeFileEither (entitiesFolder </> entityFile)) >>= \case
@@ -123,20 +121,39 @@ loadEntities entitiesFolder = do
                 liftIO $ putStrLn ("Error loading " ++ (entitiesFolder </> entityFile)
                                                     ++ ": " ++ show parseException)
 
-spawnEntityFromJSON :: (MonadIO m, MonadState ECS m) => Persistence -> Map ComponentName Value -> m EntityID
+spawnEntityFromJSON :: (MonadIO m, MonadState ECS m)
+                    => Persistence
+                    -> Map ComponentName Value
+                    -> m EntityID
 spawnEntityFromJSON persistence entityValues = do
     entityID <- newEntity
     restoreEntityFromValues persistence entityID entityValues
     return entityID
 
-restoreEntityFromValues :: (MonadIO m, MonadState ECS m) => Persistence -> EntityID -> Map ComponentName Value -> m ()
+restoreEntityFromValues :: (MonadIO m, MonadState ECS m)
+                        => Persistence
+                        -> EntityID
+                        -> Map ComponentName Value
+                        -> m ()
 restoreEntityFromValues persistence entityID entityValues = do
     componentInterfaces <- use wldComponentLibrary
 
     runEntity entityID $
         forM_ (Map.toList entityValues) $ \(componentName, value) -> do
-            forM_ (Map.lookup componentName componentInterfaces) $ \ComponentInterface{..} ->
-                forM_ ciRestoreComponent $ \restoreComponent ->
-                    restoreComponent value
+            forM_ (Map.lookup componentName componentInterfaces) $
+                \ComponentInterface{..} ->
+                    forM_ ciRestoreComponent $ \restoreComponent ->
+                        restoreComponent value
 
     activateEntity persistence entityID
+
+
+saveEntities :: (MonadState ECS m, MonadIO m) => FilePath -> m ()
+saveEntities sceneFolder = do
+    entities <- use wldEntities
+    componentInterfaces <- Map.toList <$> use wldComponentLibrary
+    forM_ entities $ \entityID -> do
+        yaml <- entityAsJSON' entityID componentInterfaces
+        liftIO $ do
+            createDirectoryIfMissing True sceneFolder
+            encodeFile (sceneFolder </> show entityID ++ ".yaml") yaml
