@@ -39,11 +39,10 @@ data ECS = ECS
     , _wldComponents       :: Components
     , _wldComponentLibrary :: Map ComponentName ComponentInterface
     , _wldEntities         :: [EntityID]
-    , _wldEntityLibrary    :: Map EntityName Vault
     }
 
 newECS :: ECS
-newECS = ECS mempty mempty mempty mempty mempty
+newECS = ECS mempty mempty mempty mempty
 
 data ComponentInterface = ComponentInterface
     { ciRemoveComponent  :: forall m. (MonadReader EntityID m, MonadState ECS m, MonadIO m) => (m ())
@@ -52,7 +51,7 @@ data ComponentInterface = ComponentInterface
     , ciDeriveComponent  :: forall m. (MonadReader EntityID m, MonadState ECS m, MonadIO m) => Maybe (m ())
     }
 
--- We can't use makeClassy to define the HasECS class and lenses, 
+-- We can't use makeClassy to define the HasECS class and lenses,
 -- since the ComponentInterface and ECS types have a circular dependency,
 -- meaning either ComponentInterface can't see the generated "HasECS" class
 -- or ECS can't see the ComponentInterface type.
