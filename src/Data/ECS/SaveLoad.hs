@@ -61,9 +61,15 @@ loadEntities entitiesFolder = do
     entityFiles <- getDirectoryContentsWithExtension "yaml" entitiesFolder
     forM_ entityFiles (\entityFile -> loadEntityFile (entitiesFolder </> entityFile))
 
+entityPathToEntityID :: FilePath -> Maybe EntityID
+entityPathToEntityID entityPath =
+    if takeExtension entityPath == ".yaml"
+        then readMaybe (takeBaseName entityPath)
+        else Nothing
+
 loadEntityFile :: (MonadState ECS m, MonadIO m) => FilePath -> m ()
 loadEntityFile entityPath = do
-    case readMaybe (takeBaseName entityPath) of
+    case entityPathToEntityID entityPath of
         Just entityID ->
             liftIO (decodeFileEither entityPath) >>= \case
 
@@ -130,4 +136,6 @@ saveEntity' :: (MonadIO m, MonadState ECS m)
             => EntityID -> FilePath -> [(ComponentName, ComponentInterface)] -> m ()
 saveEntity' entityID sceneFolder componentInterfaces = do
     yaml <- entityAsJSON' entityID componentInterfaces
-    liftIO $ encodeFile (sceneFolder </> show entityID ++ ".yaml") yaml
+    liftIO $ encodeFile (pathForEntity sceneFolder entityID) yaml
+
+pathForEntity sceneFolder entityID = (sceneFolder </> show entityID ++ ".yaml")
