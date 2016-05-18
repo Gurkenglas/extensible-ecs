@@ -143,11 +143,11 @@ setComponentJSON componentKey jsonValue = case flip parseEither jsonValue parseJ
 
 appendEntityComponent :: (Monoid a, MonadState s m, HasComponents s)
                       => EntityID -> Key (EntityMap a) -> a -> m ()
-appendEntityComponent entityID key value = runEntity entityID (appendComponent key value)
+appendEntityComponent entityID key value = inEntity entityID (appendComponent key value)
 
 prependEntityComponent :: (Monoid a, MonadState s m, HasComponents s)
                        => EntityID -> Key (EntityMap a) -> a -> m ()
-prependEntityComponent entityID key value = runEntity entityID (prependComponent key value)
+prependEntityComponent entityID key value = inEntity entityID (prependComponent key value)
 
 prependComponent :: (Monoid a, MonadState s m, MonadReader EntityID m, HasComponents s)
                  => Key (EntityMap a) -> a -> m ()

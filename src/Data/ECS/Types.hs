@@ -29,8 +29,8 @@ type EntityName = String
 type ECSMonad = StateT ECS IO
 type EntityMonad = ReaderT EntityID ECSMonad
 
-runEntity :: EntityID -> ReaderT EntityID m a -> m a
-runEntity entityID action = runReaderT action entityID
+inEntity :: EntityID -> ReaderT EntityID m a -> m a
+inEntity entityID action = runReaderT action entityID
 
 newtype Components = Components { _unComponents :: Vault } deriving Monoid
 

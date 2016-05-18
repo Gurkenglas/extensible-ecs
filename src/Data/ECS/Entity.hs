@@ -41,14 +41,14 @@ makeEntityPersistent entityID = wldEntities %= (entityID:)
 removeEntity :: (MonadState ECS m, MonadIO m) => EntityID -> m ()
 removeEntity entityID = do
     library <- use wldComponentLibrary
-    forM_ library (\ComponentInterface{..} -> runEntity entityID ciRemoveComponent)
+    forM_ library (\ComponentInterface{..} -> inEntity entityID ciRemoveComponent)
     wldEntities %= delete entityID
 
 deriveComponents :: (MonadIO m, MonadState ECS m) => EntityID -> m ()
 deriveComponents entityID =
     use wldComponentLibrary >>= mapM_
         (\ComponentInterface{..} ->
-            forM_ ciDeriveComponent (runEntity entityID))
+            forM_ ciDeriveComponent (inEntity entityID))
 
 -- | Registers an entity in the list of all entities, and
 -- converts inert properties into live ones

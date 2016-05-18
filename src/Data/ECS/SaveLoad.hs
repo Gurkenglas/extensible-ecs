@@ -37,7 +37,7 @@ entityAsJSON' :: (MonadIO m, MonadState ECS m)
               -> m (Map ComponentName Value)
 entityAsJSON' entityID componentInterfaces =
     foldM (\entityMap (componentName, ComponentInterface{..}) -> do
-            mValue <- join <$> forM ciExtractComponent (runEntity entityID)
+            mValue <- join <$> forM ciExtractComponent (inEntity entityID)
             return $ case mValue of
                 Just value -> Map.insert componentName value entityMap
                 Nothing    -> entityMap
@@ -108,7 +108,7 @@ restoreEntityFromValues :: (MonadIO m, MonadState ECS m)
 restoreEntityFromValues persistence entityID entityValues = do
     componentInterfaces <- use wldComponentLibrary
 
-    runEntity entityID $
+    inEntity entityID $
         forM_ (Map.toList entityValues) $ \(componentName, value) -> do
             forM_ (Map.lookup componentName componentInterfaces) $
                 \ComponentInterface{..} ->
