@@ -7,8 +7,8 @@ import Control.Lens.Extra
 import Control.Monad.State
 import Control.Monad.Reader
 import System.Random
-import Data.List
 import Data.ECS.Types
+import qualified Data.HashSet as Set
 
 data Persistence = Transient | Persistent deriving (Eq, Show)
 
@@ -35,14 +35,18 @@ spawnEntityWithPersistence persistence entityDef = do
     activateEntity persistence entityID
     return entityID
 
+
+isEntityPersistent :: MonadState ECS m => EntityID -> m Bool
+isEntityPersistent entityID = Set.member entityID <$> use wldPersistentEntities
+
 makeEntityPersistent :: MonadState ECS m => EntityID -> m ()
-makeEntityPersistent entityID = wldEntities %= (entityID:)
+makeEntityPersistent entityID = wldPersistentEntities %= (Set.insert entityID)
 
 removeEntity :: (MonadState ECS m, MonadIO m) => EntityID -> m ()
 removeEntity entityID = do
     library <- use wldComponentLibrary
     forM_ library (\ComponentInterface{..} -> inEntity entityID ciRemoveComponent)
-    wldEntities %= delete entityID
+    wldPersistentEntities %= Set.delete entityID
 
 deriveComponents :: (MonadIO m, MonadState ECS m) => EntityID -> m ()
 deriveComponents entityID =

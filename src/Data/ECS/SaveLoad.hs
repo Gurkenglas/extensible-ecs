@@ -120,7 +120,7 @@ restoreEntityFromValues persistence entityID entityValues = do
 
 saveEntities :: (MonadState ECS m, MonadIO m) => FilePath -> m ()
 saveEntities sceneFolder = do
-    entities <- use wldEntities
+    entities <- use wldPersistentEntities
     componentInterfaces <- Map.toList <$> use wldComponentLibrary
     liftIO $ createDirectoryIfMissing True sceneFolder
     forM_ entities $ \entityID -> do

@@ -9,6 +9,7 @@ module Data.ECS.Types where
 import Data.ECS.Vault (Vault)
 
 import Data.HashMap.Strict (HashMap)
+import Data.HashSet (HashSet)
 import GHC.Word
 
 import Control.Lens.Extra
@@ -18,6 +19,7 @@ import Control.Monad.Reader
 import Data.Yaml
 
 type Map = HashMap
+type Set = HashSet
 
 type EntityID = Word32
 
@@ -35,10 +37,10 @@ inEntity entityID action = runReaderT action entityID
 newtype Components = Components { _unComponents :: Vault } deriving Monoid
 
 data ECS = ECS
-    { _wldSystems          :: Vault
-    , _wldComponents       :: Components
-    , _wldComponentLibrary :: Map ComponentName ComponentInterface
-    , _wldEntities         :: [EntityID]
+    { _wldSystems            :: Vault
+    , _wldComponents         :: Components
+    , _wldComponentLibrary   :: Map ComponentName ComponentInterface
+    , _wldPersistentEntities :: Set EntityID
     }
 
 newECS :: ECS
