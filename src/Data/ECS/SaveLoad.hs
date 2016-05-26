@@ -47,10 +47,11 @@ entityAsJSON' entityID componentInterfaces =
 
 
 getDirectoryContentsSafe :: MonadIO m => FilePath -> m [FilePath]
-getDirectoryContentsSafe directory = liftIO $ catch (getDirectoryContents directory)
+getDirectoryContentsSafe directory = liftIO $ catch (filterSpecial <$> getDirectoryContents directory)
      (\e -> do
         putStrLn ("Error in getDirectoryContentsSafe: " ++ show (e :: IOException))
         return [])
+    where filterSpecial = filter (not . (`elem` [".", ".."]))
 
 getDirectoryContentsWithExtension :: MonadIO m => String -> FilePath -> m [FilePath]
 getDirectoryContentsWithExtension extension folder =
@@ -82,6 +83,7 @@ loadEntityFile entityPath = do
                                                         ++ ": " ++ show parseException)
         Nothing -> liftIO $ putStrLn ("Error loading " ++ entityPath
                                                         ++ ": couldn't determine ID")
+
 spawnEntityFromJSON :: (MonadIO m, MonadState ECS m)
                     => Persistence
                     -> Map ComponentName Value

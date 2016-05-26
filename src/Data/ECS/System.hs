@@ -23,14 +23,14 @@ withSystem systemKey action = do
     systems <- use wldSystems
     forM (Vault.lookup systemKey systems) action
 
-viewSystem :: MonadState ECS m => Key s -> Lens' s a -> m a
+--viewSystem :: MonadState ECS m => Key s -> Lens' s a -> m a
 viewSystem systemKey viewLens = view viewLens <$> getSystem systemKey
 
-viewSystemL :: MonadState ECS m => Key s -> Getting (Endo [a]) s a -> m [a]
-viewSystemL systemKey viewLens = toListOf viewLens <$> getSystem systemKey
+--viewSystemL :: MonadState ECS m => Key s -> Getting (Endo [a]) s a -> m [a]
+viewSystemL systemKey viewLens = (^.. viewLens) <$> getSystem systemKey
 
-viewSystemP :: MonadState ECS m => Key s -> Getting (First a) s a -> m (Maybe a)
-viewSystemP systemKey viewLens = preview viewLens <$> getSystem systemKey
+--viewSystemP :: MonadState ECS m => Key s -> Getting (First a) s a -> m (Maybe a)
+viewSystemP systemKey viewLens = (^? viewLens) <$> getSystem systemKey
 
 
 getSystem :: MonadState ECS m => Key b -> m b
