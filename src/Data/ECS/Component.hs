@@ -124,8 +124,8 @@ modifyEntityComponentM entityID componentKey action = do
 getComponentDefault :: (HasComponents s, MonadState s m, MonadReader EntityID m) => a -> Key (EntityMap a) -> m a
 getComponentDefault defVal componentKey = fromMaybe defVal <$> getComponent componentKey
 
-getEntityComponentDefault :: (HasComponents s, MonadState s m) => EntityID -> a -> Key (EntityMap a) -> m a
-getEntityComponentDefault entityID defVal componentKey = fromMaybe defVal <$> getEntityComponent entityID componentKey
+getEntityComponentDefault :: (HasComponents s, MonadState s m) => a -> EntityID -> Key (EntityMap a) -> m a
+getEntityComponentDefault defVal entityID componentKey = fromMaybe defVal <$> getEntityComponent entityID componentKey
 
 
 getComponent :: (HasComponents s, MonadState s m, MonadReader EntityID m) => Key (EntityMap a) -> m (Maybe a)
