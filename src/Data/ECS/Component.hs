@@ -16,15 +16,16 @@ import Data.Maybe
 import Data.Monoid
 import Data.ECS.Types
 
-infixl 0 ==>
+-- Infixr lets us do things like myFoo ==> position $ V3 1 2 3
+infixr 0 ==>
 (==>) :: (MonadState s m, MonadReader EntityID m, HasComponents s) => Key (EntityMap a) -> a -> m ()
 (==>) = setComponent
 
-infixl 0 ==%
+infixr 0 ==%
 (==%) :: (MonadReader EntityID m, HasComponents s, MonadState s m) => Key (EntityMap a) -> (a -> a) -> m ()
 (==%) = modifyComponent
 
-infixl 0 ==%~
+infixr 0 ==%~
 (==%~) :: (MonadReader EntityID m, HasComponents s, MonadState s m) => Key (EntityMap a) -> (a -> m a) -> m ()
 (==%~) = modifyComponentM
 
