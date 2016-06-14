@@ -13,11 +13,14 @@ import qualified Data.HashSet as Set
 data Persistence = Transient | Persistent deriving (Eq, Show)
 
 
-newEntity :: MonadIO m => m EntityID
-newEntity = liftIO randomIO
+newEntityID :: MonadIO m => m EntityID
+newEntityID = liftIO randomIO
 
 spawnEntity :: (MonadState ECS m, MonadIO m) => ReaderT EntityID m () -> m EntityID
 spawnEntity = spawnTransientEntity
+
+spawnEntity_ :: (MonadState ECS m, MonadIO m) => ReaderT EntityID m () -> m ()
+spawnEntity_ = void . spawnEntity_
 
 spawnPersistentEntity :: (MonadState ECS m, MonadIO m) => ReaderT EntityID m () -> m EntityID
 spawnPersistentEntity = spawnEntityWithPersistence Persistent
@@ -30,7 +33,7 @@ spawnEntityWithPersistence :: (MonadState ECS m, MonadIO m)
                            -> ReaderT EntityID m ()
                            -> m EntityID
 spawnEntityWithPersistence persistence entityDef = do
-    entityID <- newEntity
+    entityID <- newEntityID
     runReaderT entityDef entityID
     activateEntity persistence entityID
     return entityID

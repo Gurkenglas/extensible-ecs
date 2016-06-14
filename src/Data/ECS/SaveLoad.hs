@@ -89,7 +89,7 @@ spawnEntityFromJSON :: (MonadIO m, MonadState ECS m)
                     -> Map ComponentName Value
                     -> m EntityID
 spawnEntityFromJSON persistence entityValues = do
-    entityID <- newEntity
+    entityID <- newEntityID
     spawnEntityFromJSONWithID persistence entityID entityValues
     return entityID
 
