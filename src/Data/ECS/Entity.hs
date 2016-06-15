@@ -20,7 +20,7 @@ spawnEntity :: (MonadState ECS m, MonadIO m) => ReaderT EntityID m () -> m Entit
 spawnEntity = spawnTransientEntity
 
 spawnEntity_ :: (MonadState ECS m, MonadIO m) => ReaderT EntityID m () -> m ()
-spawnEntity_ = void . spawnEntity_
+spawnEntity_ = void . spawnEntity
 
 spawnPersistentEntity :: (MonadState ECS m, MonadIO m) => ReaderT EntityID m () -> m EntityID
 spawnPersistentEntity = spawnEntityWithPersistence Persistent
