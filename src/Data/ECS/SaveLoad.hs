@@ -10,11 +10,12 @@ import Data.Yaml
 import System.FilePath
 import System.Directory
 import Control.Exception
+import Control.Monad.Trans.Control
 import Data.ECS.Types
 import Data.ECS.Entity
 import Text.Read
 
-entityAsJSON :: (MonadIO m, MonadState ECS m) => EntityID -> m (Map ComponentName Value)
+entityAsJSON :: (MonadBaseControl IO m, MonadIO m, MonadState ECS m) => EntityID -> m (Map ComponentName Value)
 entityAsJSON entityID = do
     componentInterfaces <- Map.toList <$> use wldComponentLibrary
     entityAsJSON' entityID componentInterfaces
@@ -23,7 +24,7 @@ entityAsJSON entityID = do
 -- by simply copying values over via a ciCloneComponent function
 -- (cloneComponent someKey toEntityID = setEntityComponent entityID =<< getComponent someKey)
 -- entry and then calling activateEntity
-duplicateEntity :: (MonadIO m, MonadState ECS m) => Persistence -> EntityID -> m EntityID
+duplicateEntity :: (MonadBaseControl IO m, MonadIO m, MonadState ECS m) => Persistence -> EntityID -> m EntityID
 duplicateEntity persistence entityID = do
     entityValues <- entityAsJSON entityID
     spawnEntityFromJSON persistence entityValues
@@ -31,7 +32,7 @@ duplicateEntity persistence entityID = do
 -- | An internal version that lets us call Map.toList
 -- once on the wldComponentLibrary
 -- and reuse it for multiple entityAsJSON' calls
-entityAsJSON' :: (MonadIO m, MonadState ECS m)
+entityAsJSON' :: (MonadBaseControl IO m, MonadIO m, MonadState ECS m)
               => EntityID
               -> [(ComponentName, ComponentInterface)]
               -> m (Map ComponentName Value)
@@ -57,7 +58,7 @@ getDirectoryContentsWithExtension :: MonadIO m => String -> FilePath -> m [FileP
 getDirectoryContentsWithExtension extension folder =
     filter ((== ('.':extension)) . takeExtension) <$> getDirectoryContentsSafe folder
 
-loadEntities :: (MonadIO m, MonadState ECS m) => FilePath -> m ()
+loadEntities :: (MonadBaseControl IO m, MonadIO m, MonadState ECS m) => FilePath -> m ()
 loadEntities entitiesFolder = do
     entityFiles <- getDirectoryContentsWithExtension "yaml" entitiesFolder
     forM_ entityFiles (\entityFile -> loadEntityFile (entitiesFolder </> entityFile))
@@ -68,7 +69,7 @@ entityPathToEntityID entityPath =
         then readMaybe (takeBaseName entityPath)
         else Nothing
 
-loadEntityFile :: (MonadState ECS m, MonadIO m) => FilePath -> m ()
+loadEntityFile :: (MonadBaseControl IO m, MonadState ECS m, MonadIO m) => FilePath -> m ()
 loadEntityFile entityPath = do
     case entityPathToEntityID entityPath of
         Just entityID ->
@@ -84,7 +85,7 @@ loadEntityFile entityPath = do
         Nothing -> liftIO $ putStrLn ("Error loading " ++ entityPath
                                                         ++ ": couldn't determine ID")
 
-spawnEntityFromJSON :: (MonadIO m, MonadState ECS m)
+spawnEntityFromJSON :: (MonadBaseControl IO m, MonadIO m, MonadState ECS m)
                     => Persistence
                     -> Map ComponentName Value
                     -> m EntityID
@@ -93,7 +94,7 @@ spawnEntityFromJSON persistence entityValues = do
     spawnEntityFromJSONWithID persistence entityID entityValues
     return entityID
 
-spawnEntityFromJSONWithID :: (MonadIO m, MonadState ECS m)
+spawnEntityFromJSONWithID :: (MonadBaseControl IO m, MonadIO m, MonadState ECS m)
                           => Persistence
                           -> EntityID
                           -> Map ComponentName Value
@@ -102,7 +103,7 @@ spawnEntityFromJSONWithID persistence entityID entityValues = do
     restoreEntityFromValues persistence entityID entityValues
 
 
-restoreEntityFromValues :: (MonadIO m, MonadState ECS m)
+restoreEntityFromValues :: (MonadBaseControl IO m, MonadIO m, MonadState ECS m)
                         => Persistence
                         -> EntityID
                         -> Map ComponentName Value
@@ -120,7 +121,7 @@ restoreEntityFromValues persistence entityID entityValues = do
     activateEntity persistence entityID
 
 
-saveEntities :: (MonadState ECS m, MonadIO m) => FilePath -> m ()
+saveEntities :: (MonadBaseControl IO m, MonadState ECS m, MonadIO m) => FilePath -> m ()
 saveEntities sceneFolder = do
     entities <- use wldPersistentEntities
     componentInterfaces <- Map.toList <$> use wldComponentLibrary
@@ -128,13 +129,13 @@ saveEntities sceneFolder = do
     forM_ entities $ \entityID -> do
         saveEntity' entityID sceneFolder componentInterfaces
 
-saveEntity :: (MonadState ECS m, MonadIO m) => EntityID -> FilePath -> m ()
+saveEntity :: (MonadBaseControl IO m, MonadState ECS m, MonadIO m) => EntityID -> FilePath -> m ()
 saveEntity entityID sceneFolder = do
     componentInterfaces <- Map.toList <$> use wldComponentLibrary
     liftIO $ createDirectoryIfMissing True sceneFolder
     saveEntity' entityID sceneFolder componentInterfaces
 
-saveEntity' :: (MonadIO m, MonadState ECS m)
+saveEntity' :: (MonadBaseControl IO m, MonadIO m, MonadState ECS m)
             => EntityID -> FilePath -> [(ComponentName, ComponentInterface)] -> m ()
 saveEntity' entityID sceneFolder componentInterfaces = do
     yaml <- entityAsJSON' entityID componentInterfaces

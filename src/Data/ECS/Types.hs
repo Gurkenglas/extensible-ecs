@@ -15,6 +15,7 @@ import GHC.Word
 import Control.Lens.Extra
 import Control.Monad.State
 import Control.Monad.Reader
+import Control.Monad.Trans.Control
 
 import Data.Yaml
 
@@ -49,8 +50,8 @@ newECS = ECS mempty mempty mempty mempty
 data ComponentInterface = ComponentInterface
     { ciRemoveComponent  :: forall m. (MonadReader EntityID m, MonadState ECS m, MonadIO m) => (m ())
     , ciExtractComponent :: forall m. (MonadReader EntityID m, MonadState ECS m, MonadIO m) => Maybe (m (Maybe Value))
-    , ciRestoreComponent :: forall m. (MonadReader EntityID m, MonadState ECS m, MonadIO m) => Maybe (Value -> m ())
-    , ciDeriveComponent  :: forall m. (MonadReader EntityID m, MonadState ECS m, MonadIO m) => Maybe (m ())
+    , ciRestoreComponent :: forall m. (MonadReader EntityID m, MonadState ECS m, MonadIO m, MonadBaseControl IO m) => Maybe (Value -> m ())
+    , ciDeriveComponent  :: forall m. (MonadReader EntityID m, MonadState ECS m, MonadIO m, MonadBaseControl IO m) => Maybe (m ())
     }
 
 -- We can't use makeClassy to define the HasECS class and lenses,
