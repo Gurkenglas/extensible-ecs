@@ -1,12 +1,14 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE RoleAnnotations #-}
 {-# LANGUAGE BangPatterns #-}
+{-# LANGUAGE TemplateHaskell #-}
 module Data.ECS.Vault where
 
 import qualified Data.HashMap.Strict as Map
 import Data.HashMap.Strict (HashMap)
 import GHC.Exts
 import Unsafe.Coerce
+import Data.Dynamic
 --import Data.Hashable
 --import Control.Lens.Extra
 
@@ -14,15 +16,11 @@ import Unsafe.Coerce
 -- such that we can create them at compile-time based on a hash of a given name.
 -- (See Data.ECS.TH.defineKey)
 
-toAny :: a -> Any 
-toAny = unsafeCoerce 
-
-fromAny :: Any -> a 
-fromAny = unsafeCoerce 
-
 newtype Vault = Vault (HashMap Int Any) 
     --deriving (Eq, Monoid, Ixed, At)
     deriving (Monoid)
+
+makeWrapped ''Vault
 
 newtype Key a = Key Int 
     deriving (Show)
@@ -30,16 +28,5 @@ newtype Key a = Key Int
 --type role Vault nominal 
 type role Key nominal 
 
-
-lookup :: Key a -> Vault -> Maybe a
-lookup (Key key) (Vault vals) = fromAny <$> Map.lookup key vals
-
-insert :: Key a -> a -> Vault -> Vault
-insert (Key key) !value (Vault vals) = Vault $ Map.insert key (toAny value) vals 
-
-adjust :: (a -> a) -> Key a -> Vault -> Vault
-adjust f (Key k) (Vault m) = Vault $ Map.adjust f' k m 
-     where f' = toAny . f . fromAny 
-
-delete :: Key a -> Vault -> Vault
-delete (Key k) (Vault m) = Vault $ Map.delete k m
+vault :: Key a -> Lens' Vault (Maybe a)
+vault (Key key) = _Wrapping Vault . at key . iso (>>= fromDynamic) (fmap toDyn)
