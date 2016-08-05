@@ -16,35 +16,31 @@ registerSystem :: MonadState ECS m => Key a -> a -> m ()
 registerSystem = setSystem
 
 setSystem :: MonadState ECS m => Key a -> a -> m ()
-setSystem systemKey system = wldSystems %= Vault.insert systemKey system
+setSystem systemKey system = wldSystems . vault systemKey ?= system
 
 withSystem :: MonadState ECS m => Key a -> (a -> m b) -> m (Maybe b)
 withSystem systemKey action = do
-    systems <- use wldSystems
-    forM (Vault.lookup systemKey systems) action
+    systems <- preuse $ wldSystems . vault systemKey
+    forM systems action
+
+wldSystem :: Key s -> Lens' ECS s
+wldSystem systemKey = wldSystems . vault systemKey . singular _Just
 
 --viewSystem :: MonadState ECS m => Key s -> Lens' s a -> m a
-viewSystem systemKey viewLens = view viewLens <$> getSystem systemKey
+viewSystem systemKey viewLens = use $ wldSystem systemKey . viewLens
 
 --viewSystemL :: MonadState ECS m => Key s -> Getting (Endo [a]) s a -> m [a]
-viewSystemL systemKey viewLens = (^.. viewLens) <$> getSystem systemKey
+viewSystemL systemKey viewFold = gets $ toListOf $ wldSystem systemKey . viewFold
 
 --viewSystemP :: MonadState ECS m => Key s -> Getting (First a) s a -> m (Maybe a)
-viewSystemP systemKey viewLens = (^? viewLens) <$> getSystem systemKey
-
-
-getSystem :: MonadState ECS m => Key b -> m b
-getSystem systemKey = do
-    systems <- use wldSystems
-    return (fromMaybe missingSystem (Vault.lookup systemKey systems))
-    where missingSystem = error "Error: getSystem couldn't find a system for the given key!"
+viewSystemP systemKey viewTraversal = gets $ preview $ wldSystem systemKey . viewTraversal
 
 withSystem_ :: MonadState ECS m => Key a -> (a -> m b) -> m ()
 withSystem_ systemKey = void . withSystem systemKey
 
 modifySystem :: MonadState ECS m => Key s -> (s -> m (s, b)) -> m b
 modifySystem systemKey action = do
-    system <- getSystem systemKey
+    system <- use $ wldSystem systemKey
     (newSystem, b) <- action system
     setSystem systemKey newSystem
     return b
