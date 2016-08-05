@@ -29,17 +29,17 @@ infixr 0 ==%~
 (==%~) :: (MonadReader EntityID m, HasComponents s, MonadState s m) => Key (EntityMap a) -> (a -> m a) -> m ()
 (==%~) = modifyComponentM
 
+component :: HasComponents s => Key a -> Lens' s (Maybe a)
+component componentKey = components . unComponents . vault componentKey
+
 setComponentMap :: (MonadState s m, HasComponents s) => Key a -> a -> m ()
-setComponentMap componentKey value =
-    components . unComponents %= Vault.insert componentKey value
+setComponentMap componentKey value = component componentKey ?= value
 
 lookupComponentMap :: (MonadState s m, HasComponents s) => Key a -> m (Maybe a)
-lookupComponentMap componentKey = do
-    Vault.lookup componentKey <$> use (components . unComponents)
+lookupComponentMap componentKey = preuse $ component componentKey
 
 modifyComponents :: (MonadState s m, HasComponents s) => Key a -> (a -> a) -> m ()
-modifyComponents componentKey action =
-    components . unComponents %= Vault.adjust action componentKey
+modifyComponents componentKey action = component componentKey %= action
 
 registerComponent :: MonadState ECS m => String -> Key (EntityMap a) -> ComponentInterface -> m ()
 registerComponent name componentKey componentInterface = do
@@ -64,9 +64,7 @@ withComponentMap_ :: (HasComponents s, MonadState s m) => Key (EntityMap a) -> (
 withComponentMap_ componentKey = void . withComponentMap componentKey
 
 withComponentMap :: (HasComponents s, MonadState s m) => Key (EntityMap a) -> ((EntityMap a) -> m b) -> m (Maybe b)
-withComponentMap componentKey action = do
-    componentMaps <- use (components . unComponents)
-    forM (Vault.lookup componentKey componentMaps) action
+withComponentMap componentKey action = lookupComponentMap componentKey >>= traverse action
 
 getComponentMap :: (HasComponents s, MonadState s m) => Key r -> m r
 getComponentMap componentKey = fromMaybe getComponentMapError <$> lookupComponentMap componentKey
