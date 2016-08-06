@@ -20,7 +20,7 @@ setSystem systemKey system = wldSystems . vault systemKey ?= system
 
 withSystem :: MonadState ECS m => Key a -> (a -> m b) -> m (Maybe b)
 withSystem systemKey action = do
-    systems <- preuse $ wldSystems . vault systemKey
+    systems <- use $ wldSystems . vault systemKey
     forM systems action
 
 wldSystem :: Key s -> Lens' ECS s
